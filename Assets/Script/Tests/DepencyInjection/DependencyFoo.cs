@@ -1,0 +1,20 @@
+using System;
+using UnityEngine;
+
+public class DependencyFoo : MonoBehaviour
+{
+    [DependencyInjection] private FooService m_fooService;
+
+
+    private void Start()
+    {
+        if (m_fooService)
+        {
+            m_fooService.FooSayHello();
+        }
+        else
+        {
+            Debug.Log("Foo Service is null");
+        }
+    }
+}
