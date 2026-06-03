@@ -21,25 +21,13 @@ public abstract class Character : MonoBehaviour
         set => m_currentAttack = value;
     }
     #endregion
-
-    #region Actions
-
-    private ActionCommand m_attack;
-    private ActionCommand m_defend;
-    private ActionCommand m_magic;
-
-    #endregion
     
-    private Character currentTarget;
-    public Character CurrentTarget { get => currentTarget; set => currentTarget = value; }
+
     private UnityEvent EndOfTurn;
     public UnityEvent EndOfTurnEvent { get => EndOfTurn; set => EndOfTurn = value; }
 
     #region Main Functions
-    public void DoAction(ActionCommand actionCommandToUse)
-    {
-        actionCommandToUse.Execute(this, CurrentTarget);
-    }
+
     protected virtual void OnEndOfTurn()
     {
         EndOfTurn?.Invoke();
