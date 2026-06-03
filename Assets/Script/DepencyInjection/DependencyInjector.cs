@@ -26,7 +26,6 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    [Button]
     private void InjectDependencies(GameObject inGameObject)
     {
         foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
