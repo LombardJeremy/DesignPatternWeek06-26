@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Action_Attack : MonoBehaviour, Action
+public class ActionCommandAttack : MonoBehaviour, ActionCommand
 {
     private ActionType m_ActionType = ActionType.ATTACK;
     public ActionType ActionType { 

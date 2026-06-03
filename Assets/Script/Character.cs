@@ -24,9 +24,9 @@ public abstract class Character : MonoBehaviour
 
     #region Actions
 
-    private Action m_attack;
-    private Action m_defend;
-    private Action m_magic;
+    private ActionCommand m_attack;
+    private ActionCommand m_defend;
+    private ActionCommand m_magic;
 
     #endregion
     
@@ -36,9 +36,9 @@ public abstract class Character : MonoBehaviour
     public UnityEvent EndOfTurnEvent { get => EndOfTurn; set => EndOfTurn = value; }
 
     #region Main Functions
-    public void DoAction(Action actionToUse)
+    public void DoAction(ActionCommand actionCommandToUse)
     {
-        actionToUse.Execute(this, CurrentTarget);
+        actionCommandToUse.Execute(this, CurrentTarget);
     }
     protected virtual void OnEndOfTurn()
     {

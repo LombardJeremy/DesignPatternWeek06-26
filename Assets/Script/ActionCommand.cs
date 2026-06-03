@@ -1,5 +1,5 @@
 
-public interface Action
+public interface ActionCommand
 {
     ActionType ActionType { get; set; }
     bool Execute(Character self, Character target);
