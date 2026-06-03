@@ -9,17 +9,42 @@ using UnityEngine.SceneManagement;
 
 public class DependencyInjector : MonoBehaviour
 {
-    [SerializeField] private List<Service> m_services = new List<Service>();
+    private Dictionary<Type, MonoBehaviour> m_services = new Dictionary<Type, MonoBehaviour>();
     
     private void Awake()
     {
-        InjectDependenciesFromRoots();
+        GameObject[] rootGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
+        
+        GetServicesFromRoots(rootGameObjects);
+        
+        InjectDependenciesFromRoots(rootGameObjects);
     }
 
-    private void InjectDependenciesFromRoots()
+    private void GetServicesFromRoots(GameObject[] rootGameObjects)
     {
-        GameObject[] rootGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (GameObject rootGameObject in rootGameObjects)
+        {
+            CheckGameObjectForServices(rootGameObject);
+        }
+    }
 
+    private void CheckGameObjectForServices(GameObject inGameObject)
+    {
+        foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
+        {
+            Type componentType = component.GetType();
+
+            if (componentType.HasAttribute<ServiceAttribute>())
+            {
+                m_services.TryAdd(componentType, component);
+            }
+        }
+
+        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServices(childTransform.gameObject);
+    }
+
+    private void InjectDependenciesFromRoots(GameObject[] rootGameObjects)
+    {
         foreach (GameObject rootGameObject in rootGameObjects)
         {
             InjectDependencies(rootGameObject);
@@ -37,7 +62,7 @@ public class DependencyInjector : MonoBehaviour
             {
                 if (fieldInfo.HasAttribute<DependencyInjectionAttribute>())
                 {
-                    Service foundService = m_services.Find(service => service.GetType() == fieldInfo.FieldType);
+                    m_services.TryGetValue(fieldInfo.FieldType, out MonoBehaviour foundService);
 
                     if (foundService != null)
                     {
