@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class FooService : MonoBehaviour
+public class FooService : Service
 {
    public void FooSayHello()
    {

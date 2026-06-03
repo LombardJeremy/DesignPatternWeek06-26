@@ -1,10 +1,11 @@
 using System;
+using System.Reflection;
+using NaughtyAttributes;
 using UnityEngine;
 
 public class DependencyFoo : MonoBehaviour
 {
     [DependencyInjection] private FooService m_fooService;
-
 
     private void Start()
     {
