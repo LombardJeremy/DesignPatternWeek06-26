@@ -1,4 +1,5 @@
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class UiManager : MonoBehaviour
@@ -7,6 +8,8 @@ public class UiManager : MonoBehaviour
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
     private GameObject[] m_uiList; 
+    
+    [DependencyInjection] private RoundManager m_roundManager; //Don't use in Awake
 
     private int m_targetUI = 0;
     
@@ -22,6 +25,20 @@ public class UiManager : MonoBehaviour
         m_uiList.Append(m_uiAttack);
         m_uiList.Append(m_uiDefense);
         m_uiList.Append(m_uiMagic);
+    }
+    
+
+    public void DoActionAttack()
+    {
+        m_roundManager.DoAction(ActionType.ATTACK);
+    }
+    public void DoActionDefense()
+    {
+        m_roundManager.DoAction(ActionType.DEFENSE);
+    }
+    public void DoActionMagic()
+    {
+        m_roundManager.DoAction(ActionType.MAGIC);
     }
 
     public void ChangeActionUI(ActionCommand action)
