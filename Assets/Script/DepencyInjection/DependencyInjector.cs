@@ -15,8 +15,10 @@ public class DependencyInjector : MonoBehaviour
     
     private void Awake()
     {
+        // Get all services types (used in certain places to simplify some algorithms)
         GetGlobalServiceTypes();
         
+        // Get all root objects
         List<GameObject> rootGameObjects = new List<GameObject>();
         
         for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -26,20 +28,28 @@ public class DependencyInjector : MonoBehaviour
             rootGameObjects.AddRange(scene.GetRootGameObjects());
         }
         
+        // Dummy object to access game objects already in don't destroy on load scene
         GameObject ddolDummy =  new GameObject("DependencyInjectorDDOLDummy");
         DontDestroyOnLoad(ddolDummy);
         rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
         Destroy(ddolDummy);
         
+        foreach (GameObject rootGameObject in rootGameObjects)
+        {
+            // Get services (global and local) already in scene
+            CheckForServicesInGameObject(rootGameObject);
+        }
         
-        GetGlobalServiceAlreadyInScene(rootGameObjects);
+        // Create global services that should be instantiated
         CreateGlobalServicesNotInScene(rootGameObjects);
         
-        GetServiceComponentsFromRoots(rootGameObjects);
-        
-        InjectDependenciesFromRoots(rootGameObjects);
+        // Do injection
+        foreach (GameObject rootGameObject in rootGameObjects)
+        {
+            InjectDependenciesFromRoot(rootGameObject);
+        }
     }
-    #region Services Search
+    #region Services Search And Creation
 
     private void GetGlobalServiceTypes()
     {
@@ -52,18 +62,18 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    private void GetGlobalServiceAlreadyInScene(List<GameObject> rootGameObjects)
-    {
-        foreach (GameObject rootGameObject in rootGameObjects)
-        {
-            CheckForGlobalServiceInGameObject(rootGameObject);
-        }
-    }
-
-    private void CheckForGlobalServiceInGameObject(GameObject inGameObject)
+    private void CheckForServicesInGameObject(GameObject inGameObject)
     {
         foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
         {
+            // Check if component is a 'local' service with a scope
+            if (component is DependencyInjectorComponent dependencyInjector)
+            {
+                m_injectorComponents.Add(dependencyInjector);
+                continue;
+            }
+            
+            // If not check if the component is a global service
             ServiceAttribute serviceAttribute = component.GetType().GetCustomAttribute<ServiceAttribute>();
             if (serviceAttribute == null) continue;
             
@@ -73,10 +83,9 @@ public class DependencyInjector : MonoBehaviour
             }
         }
 
-        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServiceComponents(childTransform.gameObject);
-
+        foreach (Transform childTransform in inGameObject.transform) CheckForServicesInGameObject(childTransform.gameObject);
     }
-
+    
     private void CreateGlobalServicesNotInScene(List<GameObject> rootGameObjects)
     {
         foreach (Type serviceType in m_globalServiceTypes)
@@ -99,39 +108,11 @@ public class DependencyInjector : MonoBehaviour
             m_globalServices.TryAdd(singleServiceType, createdService);
         }
     }
-
-    private void GetServiceComponentsFromRoots(List<GameObject> rootGameObjects)
-    {
-        foreach (GameObject rootGameObject in rootGameObjects)
-        {
-            CheckGameObjectForServiceComponents(rootGameObject);
-        }
-    }
-
-    private void CheckGameObjectForServiceComponents(GameObject inGameObject)
-    {
-        foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
-        {
-            if (component is DependencyInjectorComponent dependencyInjector)
-            {
-                m_injectorComponents.Add(dependencyInjector);
-            }
-        }
-
-        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServiceComponents(childTransform.gameObject);
-    }
     #endregion
 
     #region Injection
-    private void InjectDependenciesFromRoots(List<GameObject> rootGameObjects)
-    {
-        foreach (GameObject rootGameObject in rootGameObjects)
-        {
-            InjectDependencies(rootGameObject);
-        }
-    }
 
-    private void InjectDependencies(GameObject inGameObject)
+    private void InjectDependenciesFromRoot(GameObject inGameObject)
     {
         foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
         {
@@ -159,7 +140,7 @@ public class DependencyInjector : MonoBehaviour
             }
         }
         
-        foreach (Transform childTransform in inGameObject.transform) InjectDependencies(childTransform.gameObject);
+        foreach (Transform childTransform in inGameObject.transform) InjectDependenciesFromRoot(childTransform.gameObject);
     }
     #endregion
 }
