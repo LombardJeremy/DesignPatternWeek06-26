@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class DependencyFoo : MonoBehaviour
+public class FooDependency : MonoBehaviour
 {
     [DependencyInjection] private FooService m_fooService;
 
