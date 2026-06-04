@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -16,7 +17,19 @@ public class DependencyInjector : MonoBehaviour
         
         CreateGlobalServices();
         
-        GameObject[] rootGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
+        List<GameObject> rootGameObjects = new List<GameObject>();
+        
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+            
+            rootGameObjects.AddRange(scene.GetRootGameObjects());
+        }
+        
+        GameObject ddolDummy =  new GameObject("DependencyInjectorDDOLDummy");
+        DontDestroyOnLoad(ddolDummy);
+        rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
+        Destroy(ddolDummy);
         
         // GetMultipleServicesFromRoots(rootGameObjects);
         
@@ -43,10 +56,9 @@ public class DependencyInjector : MonoBehaviour
             if(serviceAttribute == null) continue;
             
             Type singleServiceType = serviceType;
-            GameObject go = new GameObject();
+            GameObject go = new GameObject(singleServiceType.Name);
             
             DontDestroyOnLoad(go);
-            go.name = singleServiceType.Name;
             
             Component createdService = go.AddComponent(singleServiceType);
             
@@ -54,7 +66,7 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    private void GetMultipleServicesFromRoots(GameObject[] rootGameObjects)
+    private void GetMultipleServicesFromRoots(List<GameObject> rootGameObjects)
     {
         foreach (GameObject rootGameObject in rootGameObjects)
         {
@@ -79,7 +91,7 @@ public class DependencyInjector : MonoBehaviour
     #endregion
 
     #region Injection
-    private void InjectDependenciesFromRoots(GameObject[] rootGameObjects)
+    private void InjectDependenciesFromRoots(List<GameObject> rootGameObjects)
     {
         foreach (GameObject rootGameObject in rootGameObjects)
         {
