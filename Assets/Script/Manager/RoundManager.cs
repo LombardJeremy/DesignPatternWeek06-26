@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
-[Service]
 public class RoundManager : MonoBehaviour
 {
     private static RoundManager s_instance;
@@ -10,11 +10,9 @@ public class RoundManager : MonoBehaviour
     [SerializeField] private Character m_player;
     [SerializeField] private Character m_enemy;
     
-    #region Actions
-
-    private ActionCommand m_attack;
-    private ActionCommand m_defend;
-    private ActionCommand m_magic;
+    [DependencyInjection] private UiManager m_uiManager;
+    
+    #region Character
     
     private Character currentTarget;
     public Character CurrentTarget { get => currentTarget; set => currentTarget = value; }
@@ -34,36 +32,24 @@ public class RoundManager : MonoBehaviour
         {
             s_instance = this;
         }
-        m_player.EndOfTurnEvent.AddListener(EndOfPlayerTurn);
-        m_enemy.EndOfTurnEvent.AddListener(EndOfEnemyTurn);
     }
 
     private void Start()
     {
-        if (m_attack == null && m_defend == null && m_magic == null)
-        {
-            throw new SystemException("No Action Set");
-        }
+        m_player.ActionDeclaration += EndOfActionDeclaration;
+        m_enemy.ActionDeclaration += EndOfActionDeclaration;
     }
 
     private void OnDestroy()
     {
-        m_player.EndOfTurnEvent.RemoveListener(EndOfPlayerTurn);
-        m_enemy.EndOfTurnEvent.RemoveListener(EndOfEnemyTurn);
+        m_player.ActionDeclaration -= EndOfActionDeclaration;
+        m_enemy.ActionDeclaration -= EndOfActionDeclaration;
     }
 
-    private void EndOfPlayerTurn()
+    private void EndOfActionDeclaration(ActionCommand action,  bool castOnSelf)
     {
-        //TODO
+        DoAction(action, castOnSelf);
         UpdateRound();
-        throw new System.NotImplementedException();
-    }
-
-    private void EndOfEnemyTurn()
-    {
-        //TODO
-        UpdateRound();
-        throw new System.NotImplementedException();
     }
     
 
@@ -72,42 +58,44 @@ public class RoundManager : MonoBehaviour
         if (m_currentCharacterPlayin == 0)
         {
             m_currentCharacterPlayin = 1;
+            UnlockUI(false);
+            m_enemy.InitializeCharacter();
+            
         }
         else
         {
             m_currentCharacterPlayin = 0;
+            UnlockUI(true);
+            m_player.InitializeCharacter();
         }
     }
     
-    public void DoAction(ActionType actionType)
+    public void DoAction(ActionCommand action, bool castOnSelf)
     {
-        Character client;
         if (m_currentCharacterPlayin == 0)
         {
-            client = m_player;
-            currentTarget = m_enemy;
+            action.Execute(m_player, castOnSelf ? m_player : m_enemy);
         }
         else
         {
-            client = m_enemy;
-            currentTarget = m_player;
+            action.Execute(m_enemy, castOnSelf ? m_enemy : m_player);
         }
-        switch (actionType)
-        {
-            case ActionType.DEFAULT:
-                break;
-            case ActionType.ATTACK:
-                m_attack.Execute(client, CurrentTarget);
-                break;
-            case ActionType.DEFENSE:
-                m_defend.Execute(client, client);
-                break;
-            case ActionType.MAGIC:
-                m_magic.Execute(client, CurrentTarget);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(actionType), actionType, null);
-        }
+    }
 
+    public void UnlockUI(bool isUnlocked)
+    {
+        if (m_uiManager == null) return;
+        if (isUnlocked)
+        {
+            m_uiManager.MUIAttack.GetComponent<Button>().interactable = true;
+            m_uiManager.MUIDefense.GetComponent<Button>().interactable = true;
+            m_uiManager.MUIMagic.GetComponent<Button>().interactable = true;
+        }
+        else
+        {
+            m_uiManager.MUIAttack.GetComponent<Button>().interactable = false;
+            m_uiManager.MUIDefense.GetComponent<Button>().interactable = false;
+            m_uiManager.MUIMagic.GetComponent<Button>().interactable = false;
+        }
     }
 }

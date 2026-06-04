@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -21,16 +22,36 @@ public abstract class Character : MonoBehaviour
         set => m_currentAttack = value;
     }
     #endregion
-    
+    #region Actions
 
-    private UnityEvent EndOfTurn;
-    public UnityEvent EndOfTurnEvent { get => EndOfTurn; set => EndOfTurn = value; }
+    private ActionCommand m_attack;
+    private ActionCommand m_defend;
+    private ActionCommand m_magic;
+    public event Action<ActionCommand, bool> ActionDeclaration; 
 
+    #endregion
     #region Main Functions
-
-    protected virtual void OnEndOfTurn()
+    
+    public virtual void InitializeCharacter() { }
+    
+    public void DeclareAction(ActionType actionType)
     {
-        EndOfTurn?.Invoke();
+        switch (actionType)
+        {
+            case ActionType.DEFAULT:
+                break;
+            case ActionType.ATTACK:
+                ActionDeclaration?.Invoke(m_attack, false);
+                break;
+            case ActionType.DEFENSE:
+                ActionDeclaration?.Invoke(m_defend, true);
+                break;
+            case ActionType.MAGIC:
+                ActionDeclaration?.Invoke(m_magic, false);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(actionType), actionType, null);
+        }
     }
     #endregion
     

@@ -10,7 +10,7 @@ public class ActionCommandMagic : MonoBehaviour, ActionCommand
     public bool Execute(Character self, Character target)
     {
         //TODO : Attack Execution sophisticated
-        target.RemoveHealth(self.CurrentAttack);
+        target.RemoveHealth(self.CurrentAttack * self.CurrentHealth);
         
         //TODO : return state
         return true;

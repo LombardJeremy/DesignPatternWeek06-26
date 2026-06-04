@@ -5,14 +5,13 @@ public class GameManager : MonoBehaviour
 {
     private static GameManager s_instance;
     
-    [DependencyInjection] private RoundManager m_roundManager;
+    [SerializeField] private RoundManager m_roundManager;
 
     private void Awake()
     {
         if (s_instance != null && s_instance != this)
         {
             Destroy(gameObject);
-            
         }
         else
         {

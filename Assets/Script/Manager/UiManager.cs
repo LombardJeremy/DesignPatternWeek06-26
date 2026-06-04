@@ -2,14 +2,33 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
+[Service]
 public class UiManager : MonoBehaviour
 {
     [SerializeField] private GameObject m_uiAttack; //0
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
     private GameObject[] m_uiList; 
-    
-    [DependencyInjection] private RoundManager m_roundManager; //Don't use in Awake
+
+    public GameObject MUIAttack
+    {
+        get => m_uiAttack;
+        set => m_uiAttack = value;
+    }
+
+    public GameObject MUIDefense
+    {
+        get => m_uiDefense;
+        set => m_uiDefense = value;
+    }
+
+    public GameObject MUIMagic
+    {
+        get => m_uiMagic;
+        set => m_uiMagic = value;
+    }
+
+    [DependencyInjection] private Player m_player; //Don't use in Awake
 
     private int m_targetUI = 0;
     
@@ -30,38 +49,14 @@ public class UiManager : MonoBehaviour
 
     public void DoActionAttack()
     {
-        m_roundManager.DoAction(ActionType.ATTACK);
+        m_player.DeclareAction(ActionType.ATTACK);
     }
     public void DoActionDefense()
     {
-        m_roundManager.DoAction(ActionType.DEFENSE);
+        m_player.DeclareAction(ActionType.DEFENSE);
     }
     public void DoActionMagic()
     {
-        m_roundManager.DoAction(ActionType.MAGIC);
-    }
-
-    public void ChangeActionUI(ActionCommand action)
-    {
-        switch (action.ActionType)
-        {
-            case ActionType.DEFAULT:
-                m_targetUI = 0;
-                break;
-            case ActionType.ATTACK:
-                (m_uiAttack.transform.position, m_uiList[m_targetUI].transform.position) = (m_uiList[m_targetUI].transform.position, m_uiAttack.transform.position);
-                m_targetUI = 0;
-                break;
-            case ActionType.DEFENSE:
-                (m_uiDefense.transform.position, m_uiList[m_targetUI].transform.position) = (m_uiList[m_targetUI].transform.position, m_uiDefense.transform.position);
-                m_targetUI = 1;
-                break;
-            case ActionType.MAGIC:
-                (m_uiMagic.transform.position, m_uiList[m_targetUI].transform.position) = (m_uiList[m_targetUI].transform.position, m_uiMagic.transform.position);
-                m_targetUI = 2;
-                break;
-            default:
-                break;
-        }
+        m_player.DeclareAction(ActionType.MAGIC);
     }
 }
