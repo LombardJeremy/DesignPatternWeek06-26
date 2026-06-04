@@ -11,6 +11,8 @@ public class DependencyInjector : MonoBehaviour
     private List<Type> m_globalServiceTypes = new List<Type>();
     private Dictionary<Type, Component> m_globalServices = new Dictionary<Type, Component>();
     
+    private List<DependencyInjectorComponent> m_injectorComponents = new List<DependencyInjectorComponent>();
+    
     private void Awake()
     {
         GetGlobalServiceTypes();
@@ -31,7 +33,7 @@ public class DependencyInjector : MonoBehaviour
         rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
         Destroy(ddolDummy);
         
-        // GetMultipleServicesFromRoots(rootGameObjects);
+        GetServiceComponentsFromRoots(rootGameObjects);
         
         InjectDependenciesFromRoots(rootGameObjects);
     }
@@ -66,27 +68,25 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    private void GetMultipleServicesFromRoots(List<GameObject> rootGameObjects)
+    private void GetServiceComponentsFromRoots(List<GameObject> rootGameObjects)
     {
         foreach (GameObject rootGameObject in rootGameObjects)
         {
-            CheckGameObjectForServices(rootGameObject);
+            CheckGameObjectForServiceComponents(rootGameObject);
         }
     }
 
-    private void CheckGameObjectForServices(GameObject inGameObject)
+    private void CheckGameObjectForServiceComponents(GameObject inGameObject)
     {
         foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
         {
-            Type componentType = component.GetType();
-
-            if (componentType.HasAttribute<ServiceAttribute>())
+            if (component is DependencyInjectorComponent dependencyInjector)
             {
-                m_globalServices.TryAdd(componentType, component);
+                m_injectorComponents.Add(dependencyInjector);
             }
         }
 
-        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServices(childTransform.gameObject);
+        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServiceComponents(childTransform.gameObject);
     }
     #endregion
 
@@ -110,12 +110,19 @@ public class DependencyInjector : MonoBehaviour
             {
                 if (fieldInfo.HasAttribute<DependencyInjectionAttribute>())
                 {
-                    m_globalServices.TryGetValue(fieldInfo.FieldType, out Component foundService);
+                    // Try global service injection first
 
-                    if (foundService != null)
+                    if (m_globalServices.TryGetValue(fieldInfo.FieldType, out Component foundService))
                     {
-                        fieldInfo.SetValue(component, foundService);
+                        if (foundService != null)
+                        {
+                            fieldInfo.SetValue(component, foundService);
+                        }  
+                        
+                        continue;
                     }
+                    
+                    
                 }
             }
         }
