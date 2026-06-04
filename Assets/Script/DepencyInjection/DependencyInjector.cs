@@ -135,7 +135,24 @@ public class DependencyInjector : MonoBehaviour
                         continue;
                     }
                     
+                    // Then do local injection
                     
+                    // I - Search in same game object for injector component with Game object scope 
+                    
+                    
+                    // II - Else start in the hierarchy
+                    // Start search in parents for injector component with children scope
+                    
+                    // Start search in children for injector component with Parent scope
+                    
+                    // If found, check distance and use closest
+                    
+                    // III - Else search in from other roots for injector component with scene scope
+                    
+                    // Start from each root game object and return distance
+                    // Keep the one with shortest distance
+                    
+                    // IV - At this point we didn't find any, we just continue
                 }
             }
         }
