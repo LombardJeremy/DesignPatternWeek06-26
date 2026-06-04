@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[Service(ServiceFlags.Single)]
+[Service]
 public class FooService : MonoBehaviour
 {
    public void FooSayHello()

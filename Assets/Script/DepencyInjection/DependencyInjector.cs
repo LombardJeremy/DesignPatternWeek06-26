@@ -7,38 +7,54 @@ using UnityEngine.SceneManagement;
 
 public class DependencyInjector : MonoBehaviour
 {
-    private Dictionary<Type, Component> m_services = new Dictionary<Type, Component>();
+    private List<Type> m_globalServiceTypes = new List<Type>();
+    private Dictionary<Type, Component> m_globalServices = new Dictionary<Type, Component>();
     
     private void Awake()
     {
-        CreateSingleServices();
+        GetGlobalServiceTypes();
+        
+        CreateGlobalServices();
         
         GameObject[] rootGameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
         
-        //GetServicesFromRoots(rootGameObjects);
+        // GetMultipleServicesFromRoots(rootGameObjects);
         
         InjectDependenciesFromRoots(rootGameObjects);
     }
 
     #region Services Search
-    private void CreateSingleServices()
+    private void GetGlobalServiceTypes()
     {
         foreach (TypeInfo typeInfo in GetType().Assembly.DefinedTypes)
         {
             if (typeInfo.HasAttribute<ServiceAttribute>())
             {
-                Type serviceType = typeInfo.AsType();
-                GameObject go = new GameObject();
-                go.name = typeInfo.Name;
-                
-                Component createdService = go.AddComponent(serviceType);
-                
-                m_services.TryAdd(serviceType, createdService);
+                m_globalServiceTypes.Add(typeInfo.AsType());
             }
         }
     }
 
-    private void GetServicesFromRoots(GameObject[] rootGameObjects)
+    private void CreateGlobalServices()
+    {
+        foreach (Type serviceType in m_globalServiceTypes)
+        {
+            ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
+            if(serviceAttribute == null) continue;
+            
+            Type singleServiceType = serviceType;
+            GameObject go = new GameObject();
+            
+            DontDestroyOnLoad(go);
+            go.name = singleServiceType.Name;
+            
+            Component createdService = go.AddComponent(singleServiceType);
+            
+            m_globalServices.TryAdd(singleServiceType, createdService);
+        }
+    }
+
+    private void GetMultipleServicesFromRoots(GameObject[] rootGameObjects)
     {
         foreach (GameObject rootGameObject in rootGameObjects)
         {
@@ -54,7 +70,7 @@ public class DependencyInjector : MonoBehaviour
 
             if (componentType.HasAttribute<ServiceAttribute>())
             {
-                m_services.TryAdd(componentType, component);
+                m_globalServices.TryAdd(componentType, component);
             }
         }
 
@@ -82,7 +98,7 @@ public class DependencyInjector : MonoBehaviour
             {
                 if (fieldInfo.HasAttribute<DependencyInjectionAttribute>())
                 {
-                    m_services.TryGetValue(fieldInfo.FieldType, out Component foundService);
+                    m_globalServices.TryGetValue(fieldInfo.FieldType, out Component foundService);
 
                     if (foundService != null)
                     {
