@@ -17,8 +17,6 @@ public class DependencyInjector : MonoBehaviour
     {
         GetGlobalServiceTypes();
         
-        CreateGlobalServices();
-        
         List<GameObject> rootGameObjects = new List<GameObject>();
         
         for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -33,12 +31,16 @@ public class DependencyInjector : MonoBehaviour
         rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
         Destroy(ddolDummy);
         
+        
+        GetGlobalServiceAlreadyInScene(rootGameObjects);
+        CreateGlobalServicesNotInScene(rootGameObjects);
+        
         GetServiceComponentsFromRoots(rootGameObjects);
         
         InjectDependenciesFromRoots(rootGameObjects);
     }
-
     #region Services Search
+
     private void GetGlobalServiceTypes()
     {
         foreach (TypeInfo typeInfo in GetType().Assembly.DefinedTypes)
@@ -50,20 +52,50 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    private void CreateGlobalServices()
+    private void GetGlobalServiceAlreadyInScene(List<GameObject> rootGameObjects)
+    {
+        foreach (GameObject rootGameObject in rootGameObjects)
+        {
+            CheckForGlobalServiceInGameObject(rootGameObject);
+        }
+    }
+
+    private void CheckForGlobalServiceInGameObject(GameObject inGameObject)
+    {
+        foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
+        {
+            ServiceAttribute serviceAttribute = component.GetType().GetCustomAttribute<ServiceAttribute>();
+            if (serviceAttribute == null) continue;
+            
+            if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0)
+            {
+                m_globalServices.TryAdd(component.GetType(), component);
+            }
+        }
+
+        foreach (Transform childTransform in inGameObject.transform) CheckGameObjectForServiceComponents(childTransform.gameObject);
+
+    }
+
+    private void CreateGlobalServicesNotInScene(List<GameObject> rootGameObjects)
     {
         foreach (Type serviceType in m_globalServiceTypes)
         {
             ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
             if(serviceAttribute == null) continue;
+
+            // Check if the service should be instantiated or is already in scene
+            if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0) continue;
             
+            // For global service that should be instantiated by the injector
             Type singleServiceType = serviceType;
             GameObject go = new GameObject(singleServiceType.Name);
-            
+        
             DontDestroyOnLoad(go);
+            rootGameObjects.Add(go);
             
             Component createdService = go.AddComponent(singleServiceType);
-            
+        
             m_globalServices.TryAdd(singleServiceType, createdService);
         }
     }
