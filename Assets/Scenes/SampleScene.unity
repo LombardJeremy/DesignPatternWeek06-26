@@ -7362,6 +7362,7 @@ GameObject:
   - component: {fileID: 539608081}
   - component: {fileID: 539608080}
   - component: {fileID: 539608084}
+  - component: {fileID: 539608085}
   m_Layer: 5
   m_Name: MainUI
   m_TagString: Untagged
@@ -7469,6 +7470,21 @@ MonoBehaviour:
   m_uiAttack: {fileID: 1445170810}
   m_uiDefense: {fileID: 1202948353}
   m_uiMagic: {fileID: 1718012262}
+--- !u!114 &539608085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 539608079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18443ff84f4d37c4381a9ccdadb66838, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalServiceProvider
+  <ServiceComponents>k__BackingField:
+  - {fileID: 539608084}
+  <InjectionScope>k__BackingField: 3
 --- !u!1001 &542154278
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14924,6 +14940,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Minion
+      objectReference: {fileID: 0}
+    - target: {fileID: 4369104359651086638, guid: b8e63e1fcdad9425f9577e9775d324fc,
+        type: 3}
+      propertyPath: <ServiceComponents>k__BackingField.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5943897753975625083, guid: b8e63e1fcdad9425f9577e9775d324fc,
         type: 3}
@@ -30223,6 +30244,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 8073640873627588433, guid: 8b89fdb0c71dd438b9b7b0ef242463bc,
+        type: 3}
+      propertyPath: <InjectionScope>k__BackingField
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -3,7 +3,6 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
-[Service]
 public class UiManager : MonoBehaviour
 {
     #region Main ui Objects

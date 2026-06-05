@@ -4,7 +4,6 @@ using System;
 public enum ServiceFlags
 {
     None = 0,
-    Instantiate = 1 << 0,
 }
 
 public class ServiceAttribute : Attribute

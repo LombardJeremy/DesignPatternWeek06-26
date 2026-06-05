@@ -13,12 +13,6 @@ public class DependencyInjector : MonoBehaviour
     
     private List<LocalServiceProvider> m_injectorComponents = new List<LocalServiceProvider>();
     
-    private enum LocalServiceSearchStrategy
-    {
-        InParents,
-        InChildren,
-    }
-    
     private void Awake()
     {
         // Get all services types (used in certain places to simplify some algorithms)
@@ -40,11 +34,11 @@ public class DependencyInjector : MonoBehaviour
         rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
         Destroy(ddolDummy);
         
-        foreach (GameObject rootGameObject in rootGameObjects)
-        {
-            // Get services (global and local) already in scene
-            CheckForGlobalServicesInGameObject(rootGameObject);
-        }
+        // foreach (GameObject rootGameObject in rootGameObjects)
+        // {
+        //     // Get services (global and local) already in scene
+        //     CheckForGlobalServicesInGameObject(rootGameObject);
+        // }
         
         // Create global services that should be instantiated
         CreateGlobalServicesNotInScene(rootGameObjects);
@@ -68,29 +62,29 @@ public class DependencyInjector : MonoBehaviour
         }
     }
 
-    private void CheckForGlobalServicesInGameObject(GameObject inGameObject)
-    {
-        foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
-        {
-            // Check if component is a 'local' service with a scope
-            if (component is LocalServiceProvider dependencyInjector)
-            {
-                m_injectorComponents.Add(dependencyInjector);
-                continue;
-            }
-            
-            // If not check if the component is a global service
-            ServiceAttribute serviceAttribute = component.GetType().GetCustomAttribute<ServiceAttribute>();
-            if (serviceAttribute == null) continue;
-            
-            if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0)
-            {
-                m_globalServices.TryAdd(component.GetType(), component);
-            }
-        }
-
-        foreach (Transform childTransform in inGameObject.transform) CheckForGlobalServicesInGameObject(childTransform.gameObject);
-    }
+    // private void CheckForGlobalServicesInGameObject(GameObject inGameObject)
+    // {
+    //     foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
+    //     {
+    //         // Check if component is a 'local' service with a scope
+    //         if (component is LocalServiceProvider dependencyInjector)
+    //         {
+    //             m_injectorComponents.Add(dependencyInjector);
+    //             continue;
+    //         }
+    //         
+    //         // If not check if the component is a global service
+    //         ServiceAttribute serviceAttribute = component.GetType().GetCustomAttribute<ServiceAttribute>();
+    //         if (serviceAttribute == null) continue;
+    //         
+    //         if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0)
+    //         {
+    //             m_globalServices.TryAdd(component.GetType(), component);
+    //         }
+    //     }
+    //
+    //     foreach (Transform childTransform in inGameObject.transform) CheckForGlobalServicesInGameObject(childTransform.gameObject);
+    // }
     
     private void CreateGlobalServicesNotInScene(List<GameObject> rootGameObjects)
     {
@@ -99,9 +93,6 @@ public class DependencyInjector : MonoBehaviour
             ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
             if(serviceAttribute == null) continue;
 
-            // Check if the service should be instantiated or is already in scene
-            if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0) continue;
-            
             // For global service that should be instantiated by the injector
             Type singleServiceType = serviceType;
             GameObject go = new GameObject(singleServiceType.Name);
@@ -321,7 +312,12 @@ public class DependencyInjector : MonoBehaviour
             {
                 if (otherComponent is LocalServiceProvider localServiceProvider && validScopes.Contains(localServiceProvider.InjectionScope))
                 {
-                    MonoBehaviour tempServiceFound = localServiceProvider.ServiceComponents.Find((service) => service.GetType() == serviceTypeToFind);
+                    MonoBehaviour tempServiceFound = localServiceProvider.ServiceComponents.Find((service) =>
+                    {
+                        if (service == null) return false;
+                        
+                        return service.GetType() == serviceTypeToFind;
+                    });
 
                     if (tempServiceFound == null) continue;
                             
