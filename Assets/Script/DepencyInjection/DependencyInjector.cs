@@ -8,6 +8,20 @@ using UnityEngine.SceneManagement;
 
 public class DependencyInjector : MonoBehaviour
 {
+    private List<string> NonUserAssemblyPrefixes = new List<string>()
+    {
+        "Unity",
+        "unity",
+        "System",
+        "mscorlib", 
+        "System",
+        "JetBrains",
+        "netstandard",
+        "log4net",
+        "Mono",
+        "I18N"
+    };
+    
     private List<Type> m_globalServiceTypes = new List<Type>();
     private Dictionary<Type, Component> m_globalServices = new Dictionary<Type, Component>();
     
@@ -53,38 +67,23 @@ public class DependencyInjector : MonoBehaviour
 
     private void GetGlobalServiceTypes()
     {
-        foreach (TypeInfo typeInfo in GetType().Assembly.DefinedTypes)
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+        foreach (Assembly assembly in assemblies)
         {
-            if (typeInfo.HasAttribute<ServiceAttribute>())
+            bool nonUserAssembly = NonUserAssemblyPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix));
+
+            if (nonUserAssembly) continue;
+            
+            foreach (TypeInfo typeInfo in assembly.DefinedTypes)
             {
-                m_globalServiceTypes.Add(typeInfo.AsType());
+                if (typeInfo.HasAttribute<ServiceAttribute>())
+                {
+                    m_globalServiceTypes.Add(typeInfo.AsType());
+                }
             }
         }
     }
-
-    // private void CheckForGlobalServicesInGameObject(GameObject inGameObject)
-    // {
-    //     foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
-    //     {
-    //         // Check if component is a 'local' service with a scope
-    //         if (component is LocalServiceProvider dependencyInjector)
-    //         {
-    //             m_injectorComponents.Add(dependencyInjector);
-    //             continue;
-    //         }
-    //         
-    //         // If not check if the component is a global service
-    //         ServiceAttribute serviceAttribute = component.GetType().GetCustomAttribute<ServiceAttribute>();
-    //         if (serviceAttribute == null) continue;
-    //         
-    //         if ((serviceAttribute.Flags & ServiceFlags.Instantiate) == 0)
-    //         {
-    //             m_globalServices.TryAdd(component.GetType(), component);
-    //         }
-    //     }
-    //
-    //     foreach (Transform childTransform in inGameObject.transform) CheckForGlobalServicesInGameObject(childTransform.gameObject);
-    // }
     
     private void CreateGlobalServicesNotInScene(List<GameObject> rootGameObjects)
     {
