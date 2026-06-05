@@ -129,8 +129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 105268772}
   - component: {fileID: 105268773}
-  - component: {fileID: 105268775}
-  - component: {fileID: 105268774}
   m_Layer: 0
   m_Name: BooDependency
   m_TagString: Untagged
@@ -165,33 +163,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13ade2c3f194d2e409cf6c27544759a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BooDependency
---- !u!114 &105268774
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 105268771}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 209f9dd632660954ba251153f6e3f7f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FooDependency
---- !u!114 &105268775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 105268771}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e103be0fe3d19ce42bb98cc573d72a7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DependencyInjectorComponent
-  <ServiceComponents>k__BackingField:
-  - {fileID: 105268774}
-  <InjectionScope>k__BackingField: 0
 --- !u!1 &473992005
 GameObject:
   m_ObjectHideFlags: 0
@@ -220,8 +191,7 @@ Transform:
   m_LocalPosition: {x: -6.31651, y: -0, z: 24.0171}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 946505064}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &610418675
@@ -265,6 +235,7 @@ GameObject:
   m_Component:
   - component: {fileID: 797038736}
   - component: {fileID: 797038737}
+  - component: {fileID: 797038738}
   m_Layer: 0
   m_Name: FooDependency
   m_TagString: Untagged
@@ -284,7 +255,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 946505064}
   m_Father: {fileID: 2020491045}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &797038737
@@ -299,6 +271,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 209f9dd632660954ba251153f6e3f7f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DepedencyFoo
+--- !u!114 &797038738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 797038735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e103be0fe3d19ce42bb98cc573d72a7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalService
+  <ServiceComponents>k__BackingField:
+  - {fileID: 797038737}
+  <InjectionScope>k__BackingField: 1
 --- !u!1 &826078428
 GameObject:
   m_ObjectHideFlags: 0
@@ -456,7 +443,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 105268772}
-  m_Father: {fileID: 473992006}
+  m_Father: {fileID: 797038736}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1206628744
 GameObject:

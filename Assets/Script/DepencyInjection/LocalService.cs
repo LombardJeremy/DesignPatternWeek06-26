@@ -4,12 +4,12 @@ using UnityEngine;
 public enum InjectionScope
 {
     GameObject,
-    //Children,
-    //Parent,
-    //Scene
+    Children,
+    Parents,
+    Scene
 }
 
-public class DependencyInjectorComponent : MonoBehaviour
+public class LocalServiceProvider : MonoBehaviour
 {
     [field: SerializeField] public List<MonoBehaviour> ServiceComponents { get; private set; }= new List<MonoBehaviour>();
     
