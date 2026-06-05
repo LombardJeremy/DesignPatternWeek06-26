@@ -15,4 +15,9 @@ public class FooDependency : MonoBehaviour
             Debug.Log("Foo Service is null");
         }
     }
+
+    public void FooSayHello()
+    {
+        Debug.Log("Hello World, I'm Foo Dependency!");
+    }
 }

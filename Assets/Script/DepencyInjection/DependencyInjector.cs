@@ -125,11 +125,11 @@ public class DependencyInjector : MonoBehaviour
                 {
                     // Try global service injection first
 
-                    if (m_globalServices.TryGetValue(fieldInfo.FieldType, out Component foundService))
+                    if (m_globalServices.TryGetValue(fieldInfo.FieldType, out Component globalServiceFound))
                     {
-                        if (foundService != null)
+                        if (globalServiceFound != null)
                         {
-                            fieldInfo.SetValue(component, foundService);
+                            fieldInfo.SetValue(component, globalServiceFound);
                         }  
                         
                         continue;
@@ -138,7 +138,19 @@ public class DependencyInjector : MonoBehaviour
                     // Then do local injection
                     
                     // I - Search in same game object for injector component with Game object scope 
-                    
+
+                    foreach (MonoBehaviour otherComponent in component.gameObject.GetComponents<MonoBehaviour>())
+                    {
+                        if (otherComponent is DependencyInjectorComponent dependencyInjectorComponent 
+                            && dependencyInjectorComponent.InjectionScope == InjectionScope.GameObject)
+                        {
+                            MonoBehaviour serviceFound = dependencyInjectorComponent.ServiceComponents.Find((service) => service.GetType() == fieldInfo.FieldType);
+
+                            if (serviceFound == null) continue;
+                            
+                            fieldInfo.SetValue(component, serviceFound);
+                        }
+                    }
                     
                     // II - Else start in the hierarchy
                     // Start search in parents for injector component with children scope

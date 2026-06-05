@@ -8,7 +8,7 @@ public class BooService : MonoBehaviour
     
     private void Start()
     {
-        m_fooService.FooSayHello();    
+        if(m_fooService) m_fooService.FooSayHello();    
     }
 
     public void BooSayHello()
