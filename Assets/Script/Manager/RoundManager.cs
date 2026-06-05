@@ -5,24 +5,22 @@ using UnityEngine.UI;
 public class RoundManager : MonoBehaviour
 {
     private static RoundManager s_instance;
-
     
     [SerializeField] private Character m_player;
     [SerializeField] private Character m_enemy;
-    
+    //Inject UIManager to lock and unlock UI
     [DependencyInjection] private UiManager m_uiManager;
     
     #region Character
     
     private Character currentTarget;
     public Character CurrentTarget { get => currentTarget; set => currentTarget = value; }
-
-    #endregion
-
     private int m_currentCharacterPlayin = 0;
     
-    
-    void Awake()
+    #endregion
+    #region Main FCT
+
+    void Awake() //Only 1 copy
     {
         if (s_instance != null && s_instance != this)
         {
@@ -46,13 +44,17 @@ public class RoundManager : MonoBehaviour
         m_enemy.ActionDeclaration -= EndOfActionDeclaration;
     }
 
+    #endregion
+    #region GameLoop FCT
+
+    //Fct depending on character event to update round
     private void EndOfActionDeclaration(ActionCommand action,  bool castOnSelf)
     {
         DoAction(action, castOnSelf);
         UpdateRound();
     }
     
-
+    //Simple Update between each round
     public void UpdateRound()
     {
         if (m_currentCharacterPlayin == 0)
@@ -70,6 +72,7 @@ public class RoundManager : MonoBehaviour
         }
     }
     
+    //DoAction depending on the player playing & if it's on himself
     public void DoAction(ActionCommand action, bool castOnSelf)
     {
         if (m_currentCharacterPlayin == 0)
@@ -82,7 +85,7 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-    public void UnlockUI(bool isUnlocked)
+    public void UnlockUI(bool isUnlocked) //Lock / Unlock UI
     {
         if (m_uiManager == null) return;
         if (isUnlocked)
@@ -98,4 +101,8 @@ public class RoundManager : MonoBehaviour
             m_uiManager.MUIMagic.GetComponent<Button>().interactable = false;
         }
     }
+
+    #endregion
+
+
 }

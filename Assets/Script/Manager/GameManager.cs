@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
     
     [SerializeField] private RoundManager m_roundManager;
 
+    #region Main FCT
+
     private void Awake()
     {
         if (s_instance != null && s_instance != this)
@@ -23,4 +25,7 @@ public class GameManager : MonoBehaviour
     {
         m_roundManager.UpdateRound();
     }
+
+    #endregion
+
 }

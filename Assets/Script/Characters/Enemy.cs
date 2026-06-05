@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Enemy : Character
 {
-    
+    //Enemy Brain (very delightful brain)
     public override void InitializeCharacter()
     {
         base.InitializeCharacter();
