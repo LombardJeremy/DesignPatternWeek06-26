@@ -146,9 +146,10 @@ public class DependencyInjector : MonoBehaviour
                     // I - Search in same game object for injector component with Game object scope 
 
                     bool foundNeededService = false;
+                    List<InjectionScope> searchValidScopes = new List<InjectionScope> { InjectionScope.GameObject, InjectionScope.Scene };
                     foreach (MonoBehaviour otherComponent in component.gameObject.GetComponents<MonoBehaviour>())
                     {
-                        if (otherComponent is LocalServiceProvider { InjectionScope: InjectionScope.GameObject } localServiceProvider)
+                        if (otherComponent is LocalServiceProvider localServiceProvider && searchValidScopes.Contains(localServiceProvider.InjectionScope))
                         {
                             MonoBehaviour serviceFound = localServiceProvider.ServiceComponents.Find((service) => service.GetType() == fieldInfo.FieldType);
 
