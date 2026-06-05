@@ -255,8 +255,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18443ff84f4d37c4381a9ccdadb66838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalServiceProvider
-  <ServiceComponents>k__BackingField: []
-  <InjectionScope>k__BackingField: 3
+  <ServiceComponents>k__BackingField:
+  - {fileID: 105268774}
+  <InjectionScope>k__BackingField: 1
 --- !u!1 &299957614
 GameObject:
   m_ObjectHideFlags: 0
