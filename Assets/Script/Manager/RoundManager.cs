@@ -1,37 +1,36 @@
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class RoundManager : MonoBehaviour
 {
+    // Instance of the Manager
     private static RoundManager s_instance;
 
-    
+    // Inject UIManager to lock and unlock UI
+    [DependencyInjection] private UiManager m_uiManager;
+
+    public ISnapshot MLastSnapshotToUse { get; set; }
+
+    #region Character
+
+    // Characters Fields
     [SerializeField] private Character m_player;
     [SerializeField] private Character m_enemy;
-    
-    [DependencyInjection] private UiManager m_uiManager;
-    
-    #region Character
-    
-    private Character currentTarget;
-    public Character CurrentTarget { get => currentTarget; set => currentTarget = value; }
+
+    public Character CurrentTarget { get; set; }
+
+    private int m_currentCharacterPlayin = 1;
 
     #endregion
 
-    private int m_currentCharacterPlayin = 0;
-    
-    
-    void Awake()
+    #region Main FCT
+
+    private void Awake() //Only 1 copy
     {
         if (s_instance != null && s_instance != this)
-        {
             Destroy(gameObject);
-        }
         else
-        {
             s_instance = this;
-        }
     }
 
     private void Start()
@@ -46,43 +45,62 @@ public class RoundManager : MonoBehaviour
         m_enemy.ActionDeclaration -= EndOfActionDeclaration;
     }
 
-    private void EndOfActionDeclaration(ActionCommand action,  bool castOnSelf)
+    #endregion
+
+    #region GameLoop FCT
+
+    //Fct depending on character event to update round
+    private void EndOfActionDeclaration(IActionCommand action, bool castOnSelf)
     {
         DoAction(action, castOnSelf);
         UpdateRound();
     }
-    
 
+    //Simple Update between each round
     public void UpdateRound()
     {
         if (m_currentCharacterPlayin == 0)
         {
             m_currentCharacterPlayin = 1;
+
+            if (m_enemy.IsDead)
+            {
+                Debug.Log("END GAME YOU WIN");
+
+                UnlockUI(false);
+
+                return;
+            }
+
             UnlockUI(false);
+
             m_enemy.InitializeCharacter();
-            
         }
         else
         {
             m_currentCharacterPlayin = 0;
+            if (m_player.IsDead)
+            {
+                Debug.Log("END GAME YOU LOOSE");
+                UnlockUI(false);
+                return;
+            }
+
             UnlockUI(true);
             m_player.InitializeCharacter();
         }
     }
-    
-    public void DoAction(ActionCommand action, bool castOnSelf)
+
+    //DoAction depending on the player playing & if it's on himself
+    public void DoAction(IActionCommand action, bool castOnSelf)
     {
         if (m_currentCharacterPlayin == 0)
-        {
             action.Execute(m_player, castOnSelf ? m_player : m_enemy);
-        }
         else
-        {
             action.Execute(m_enemy, castOnSelf ? m_enemy : m_player);
-        }
     }
 
-    public void UnlockUI(bool isUnlocked)
+    public void UnlockUI(bool isUnlocked) //Lock / Unlock UI
     {
         if (m_uiManager == null) return;
         if (isUnlocked)
@@ -98,4 +116,6 @@ public class RoundManager : MonoBehaviour
             m_uiManager.MUIMagic.GetComponent<Button>().interactable = false;
         }
     }
+
+    #endregion
 }

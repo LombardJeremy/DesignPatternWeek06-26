@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -5,10 +6,15 @@ using UnityEngine;
 [Service]
 public class UiManager : MonoBehaviour
 {
+    #region Main ui Objects
+
     [SerializeField] private GameObject m_uiAttack; //0
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
-    private GameObject[] m_uiList; 
+    private List<GameObject> m_uiList = new List<GameObject>(); 
+
+    #endregion
+    #region Getter/Setter
 
     public GameObject MUIAttack
     {
@@ -28,11 +34,13 @@ public class UiManager : MonoBehaviour
         set => m_uiMagic = value;
     }
 
-    [DependencyInjection] private Player m_player; //Don't use in Awake
-
-    private int m_targetUI = 0;
+    #endregion
     
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    //Inject Player Class for Action after Input
+    [DependencyInjection] private Player m_player; //Don't use in Awake
+    
+    #region Main Fct
+
     void Awake()
     {
         if (m_uiAttack == null &&  m_uiDefense == null && m_uiMagic == null)
@@ -41,11 +49,13 @@ public class UiManager : MonoBehaviour
         }
 
         //Append In List
-        m_uiList.Append(m_uiAttack);
-        m_uiList.Append(m_uiDefense);
-        m_uiList.Append(m_uiMagic);
+        m_uiList.Add(m_uiAttack);
+        m_uiList.Add(m_uiDefense);
+        m_uiList.Add(m_uiMagic);
     }
-    
+
+    #endregion
+    #region UiActions
 
     public void DoActionAttack()
     {
@@ -59,4 +69,8 @@ public class UiManager : MonoBehaviour
     {
         m_player.DeclareAction(ActionType.MAGIC);
     }
+
+    #endregion
+
+
 }
