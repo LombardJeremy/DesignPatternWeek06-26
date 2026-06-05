@@ -118,8 +118,8 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
 
             if (m_enemy.IsDead)
             {
-                Debug.Log("END GAME YOU WIN");
-
+                
+                m_uiManager.SetWinLooseText(true);
                 UnlockUI(false);
 
                 return;
@@ -136,7 +136,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             m_currentCharacterPlayin = 0;
             if (m_player.IsDead)
             {
-                Debug.Log("END GAME YOU LOOSE");
+                m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
                 return;
             }

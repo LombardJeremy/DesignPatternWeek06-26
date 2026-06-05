@@ -15,6 +15,7 @@ public class UiManager : MonoBehaviour
     private List<GameObject> m_uiList = new List<GameObject>();
 
     [SerializeField] private GameObject m_uiTurnIndicatorText;
+    [SerializeField] private TextMeshProUGUI m_uiWinLooseText;
 
     #endregion
     #region Getter/Setter
@@ -88,6 +89,20 @@ public class UiManager : MonoBehaviour
             MUIDefense.GetComponent<Button>().interactable = false;
             MUIMagic.GetComponent<Button>().interactable = false;
             m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Enemy Turn";   
+        }
+    }
+
+    public void SetWinLooseText(bool IsWin)
+    {
+        
+        m_uiWinLooseText.gameObject.SetActive(true);
+        if (IsWin)
+        {
+            m_uiWinLooseText.text = "You Win!";
+        }
+        else
+        {
+            m_uiWinLooseText.text = "You Loose!";
         }
     }
 
