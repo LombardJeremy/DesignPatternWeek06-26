@@ -24,12 +24,16 @@ public abstract class Character : MonoBehaviour, ISnapshotProvider
     
     #region Stats
     [SerializeField] private int m_maxHealth = 100;
-    private int m_currentHealth = 0;
+    [SerializeField] private int m_currentHealth = 0;
     
     public int CurrentHealth { get => m_currentHealth; set => m_currentHealth = value; }
     public int MaxHealth { get => m_maxHealth; set => m_maxHealth = value; }
 
-    public void RemoveHealth(int amount) { CurrentHealth -= amount; }
+    public void RemoveHealth(int amount)
+    {
+        CurrentHealth -= amount;
+        Debug.Log(amount);
+    }
     public void AddHealth(int amount) { CurrentHealth += amount; }
 
     [SerializeField] private int m_currentAttack = 0;
@@ -39,13 +43,14 @@ public abstract class Character : MonoBehaviour, ISnapshotProvider
         get => m_currentAttack;
         set => m_currentAttack = value;
     }
+    public bool IsDead { get => CurrentHealth <= 0; }
     #endregion
     #region Actions
 
-    private ActionCommand m_attack;
-    private ActionCommand m_defend;
-    private ActionCommand m_magic;
-    public event Action<ActionCommand, bool> ActionDeclaration; 
+    private ActionCommandAttack m_attack;
+    private ActionCommandDefense m_defend;
+    private ActionCommandMagic m_magic;
+    public event Action<IActionCommand, bool> ActionDeclaration; 
 
     #endregion
     #region Main Functions
@@ -76,6 +81,9 @@ public abstract class Character : MonoBehaviour, ISnapshotProvider
     void Awake()
     {
         CurrentHealth =  m_maxHealth;
+        m_attack = new ActionCommandAttack();
+        m_defend = new ActionCommandDefense();
+        m_magic = new ActionCommandMagic();
     }
     #endregion
 }

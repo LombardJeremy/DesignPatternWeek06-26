@@ -15,7 +15,7 @@ public class RoundManager : MonoBehaviour
     
     private Character currentTarget;
     public Character CurrentTarget { get => currentTarget; set => currentTarget = value; }
-    private int m_currentCharacterPlayin = 0;
+    private int m_currentCharacterPlayin = 1;
     
     #endregion
     #region Main FCT
@@ -48,7 +48,7 @@ public class RoundManager : MonoBehaviour
     #region GameLoop FCT
 
     //Fct depending on character event to update round
-    private void EndOfActionDeclaration(ActionCommand action,  bool castOnSelf)
+    private void EndOfActionDeclaration(IActionCommand action,  bool castOnSelf)
     {
         DoAction(action, castOnSelf);
         UpdateRound();
@@ -60,6 +60,12 @@ public class RoundManager : MonoBehaviour
         if (m_currentCharacterPlayin == 0)
         {
             m_currentCharacterPlayin = 1;
+            if (m_enemy.IsDead)
+            {
+                Debug.Log("END GAME YOU WIN");
+                UnlockUI(false);
+                return;
+            }
             UnlockUI(false);
             m_enemy.InitializeCharacter();
             
@@ -67,21 +73,29 @@ public class RoundManager : MonoBehaviour
         else
         {
             m_currentCharacterPlayin = 0;
+            if (m_player.IsDead)
+            {
+                Debug.Log("END GAME YOU LOOSE");
+                UnlockUI(false);
+                return;
+            }
             UnlockUI(true);
             m_player.InitializeCharacter();
         }
     }
     
     //DoAction depending on the player playing & if it's on himself
-    public void DoAction(ActionCommand action, bool castOnSelf)
+    public void DoAction(IActionCommand action, bool castOnSelf)
     {
         if (m_currentCharacterPlayin == 0)
         {
             action.Execute(m_player, castOnSelf ? m_player : m_enemy);
+            Debug.Log("Player Damage Enemy");
         }
         else
         {
             action.Execute(m_enemy, castOnSelf ? m_enemy : m_player);
+            Debug.Log("Enemy Damage Player");
         }
     }
 
@@ -103,6 +117,4 @@ public class RoundManager : MonoBehaviour
     }
 
     #endregion
-
-
 }

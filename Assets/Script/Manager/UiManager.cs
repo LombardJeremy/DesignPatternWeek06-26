@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -10,7 +11,7 @@ public class UiManager : MonoBehaviour
     [SerializeField] private GameObject m_uiAttack; //0
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
-    private GameObject[] m_uiList; 
+    private List<GameObject> m_uiList = new List<GameObject>(); 
 
     #endregion
     #region Getter/Setter
@@ -37,9 +38,7 @@ public class UiManager : MonoBehaviour
     
     //Inject Player Class for Action after Input
     [DependencyInjection] private Player m_player; //Don't use in Awake
-
-    private int m_targetUI = 0;
-
+    
     #region Main Fct
 
     void Awake()
@@ -50,9 +49,9 @@ public class UiManager : MonoBehaviour
         }
 
         //Append In List
-        m_uiList.Append(m_uiAttack);
-        m_uiList.Append(m_uiDefense);
-        m_uiList.Append(m_uiMagic);
+        m_uiList.Add(m_uiAttack);
+        m_uiList.Add(m_uiDefense);
+        m_uiList.Add(m_uiMagic);
     }
 
     #endregion

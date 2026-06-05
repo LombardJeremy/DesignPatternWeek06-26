@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ActionCommandMagic : MonoBehaviour, ActionCommand
+public class ActionCommandMagic : IActionCommand
 {
     private ActionType m_ActionType = ActionType.ATTACK;
     public ActionType ActionType { 
@@ -10,7 +10,7 @@ public class ActionCommandMagic : MonoBehaviour, ActionCommand
     public bool Execute(Character self, Character target)
     {
         //TODO : Attack Execution sophisticated
-        target.RemoveHealth(self.CurrentAttack * self.CurrentHealth);
+        target.RemoveHealth(self.CurrentAttack * 2);
         
         //TODO : return state
         return true;

@@ -215,7 +215,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   m_maxHealth: 100
-  m_currentAttack: 0
+  m_currentHealth: 0
+  m_currentAttack: 30
 --- !u!4 &5943897753975625083 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2221839628788110084, guid: 8b89fdb0c71dd438b9b7b0ef242463bc,

@@ -6,7 +6,7 @@ public class Enemy : Character
     public override void InitializeCharacter()
     {
         base.InitializeCharacter();
-        int seed = Random.Range(0, 3);
+        int seed = Random.Range(1, 4);
         DeclareAction((ActionType)seed);
     }
 }

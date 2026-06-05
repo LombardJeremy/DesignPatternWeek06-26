@@ -1,7 +1,7 @@
 using UnityEngine;
 
 //Main Snapshot -> Apply fct
-interface ISnapshot
+public interface ISnapshot
 {
     void Apply();
 }
