@@ -18,6 +18,6 @@ public class FooDependency : MonoBehaviour
 
     public void FooSayHello()
     {
-        Debug.Log("Hello World, I'm Foo Dependency!");
+        Debug.Log("Hello World, I'm " + gameObject.name);
     }
 }
