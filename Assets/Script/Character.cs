@@ -2,8 +2,26 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 
-public abstract class Character : MonoBehaviour
+public abstract class Character : MonoBehaviour, ISnapshotProvider
 {
+    class CharacterSnapshot : ISnapshot
+    {
+        private Character m_master;
+        private int m_currentHealth;
+        public CharacterSnapshot(Character character)
+        {
+            m_master = character;
+            m_currentHealth = character.CurrentHealth;
+        }
+        public void Apply()
+        {
+            m_master.CurrentHealth = m_currentHealth;
+        }
+    }
+    
+    ISnapshot ISnapshotProvider.GetSnapshot() => new CharacterSnapshot(this);
+    void ISnapshotProvider.ApplySnapshot(ISnapshot snapshot) => snapshot.Apply();
+    
     #region Stats
     [SerializeField] private int m_maxHealth = 100;
     private int m_currentHealth = 0;
@@ -54,12 +72,10 @@ public abstract class Character : MonoBehaviour
         }
     }
     #endregion
-    
     #region Unity Functions
     void Awake()
     {
         CurrentHealth =  m_maxHealth;
     }
     #endregion
-    
 }
