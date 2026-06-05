@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UiManager : MonoBehaviour
 {
@@ -10,7 +12,9 @@ public class UiManager : MonoBehaviour
     [SerializeField] private GameObject m_uiAttack; //0
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
-    private List<GameObject> m_uiList = new List<GameObject>(); 
+    private List<GameObject> m_uiList = new List<GameObject>();
+
+    [SerializeField] private GameObject m_uiTurnIndicatorText;
 
     #endregion
     #region Getter/Setter
@@ -67,6 +71,24 @@ public class UiManager : MonoBehaviour
     public void DoActionMagic()
     {
         m_player.DeclareAction(ActionType.MAGIC);
+    }
+
+    public void SetPlayerUIEnabled(bool enabled)
+    {
+        if (enabled)
+        {
+            MUIAttack.GetComponent<Button>().interactable = true;
+            MUIDefense.GetComponent<Button>().interactable = true;
+            MUIMagic.GetComponent<Button>().interactable = true;
+            m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Player Turn";
+        }
+        else
+        {
+            MUIAttack.GetComponent<Button>().interactable = false;
+            MUIDefense.GetComponent<Button>().interactable = false;
+            MUIMagic.GetComponent<Button>().interactable = false;
+            m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Enemy Turn";   
+        }
     }
 
     #endregion

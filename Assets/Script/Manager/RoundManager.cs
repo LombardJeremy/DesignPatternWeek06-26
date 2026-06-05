@@ -67,7 +67,10 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     }
     
     // Get Snapshot at current time
-    ISnapshot ISnapshotProvider.GetSnapshot() => new RoundManagerSnapshot(this);
+    public ISnapshot GetSnapshot()
+    {
+        return new RoundManagerSnapshot(this);
+    }
     
     // Apply Snapshot at current Time
     void ISnapshotProvider.ApplySnapshot(ISnapshot snapshot) => snapshot.Apply();
@@ -93,16 +96,6 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     {
         m_player.ActionDeclaration -= EndOfActionDeclaration;
         m_enemy.ActionDeclaration -= EndOfActionDeclaration;
-    }
-    
-    public ISnapshot GetSnapshot()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void ApplySnapshot(ISnapshot snapshot)
-    {
-        throw new System.NotImplementedException();
     }
 
     #endregion
@@ -166,18 +159,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     public void UnlockUI(bool isUnlocked) //Lock / Unlock UI
     {
         if (m_uiManager == null) return;
-        if (isUnlocked)
-        {
-            m_uiManager.MUIAttack.GetComponent<Button>().interactable = true;
-            m_uiManager.MUIDefense.GetComponent<Button>().interactable = true;
-            m_uiManager.MUIMagic.GetComponent<Button>().interactable = true;
-        }
-        else
-        {
-            m_uiManager.MUIAttack.GetComponent<Button>().interactable = false;
-            m_uiManager.MUIDefense.GetComponent<Button>().interactable = false;
-            m_uiManager.MUIMagic.GetComponent<Button>().interactable = false;
-        }
+        m_uiManager.SetPlayerUIEnabled(isUnlocked);
     }
 
     #endregion
