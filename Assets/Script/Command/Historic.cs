@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Historic : MonoBehaviour
+public class Historic
 {
     private List<ISnapshot> snapshots = new List<ISnapshot>();
     
