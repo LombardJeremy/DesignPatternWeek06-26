@@ -16,6 +16,9 @@ public class UiManager : MonoBehaviour
 
     [SerializeField] private GameObject m_uiTurnIndicatorText;
     [SerializeField] private TextMeshProUGUI m_uiWinLooseText;
+    
+    [SerializeField] private TextMeshProUGUI m_uiPlayerHP;
+    [SerializeField] private TextMeshProUGUI m_uiEnemyHP;
 
     #endregion
     #region Getter/Setter
@@ -42,6 +45,7 @@ public class UiManager : MonoBehaviour
     
     //Inject Player Class for Action after Input
     [DependencyInjection] private Player m_player; //Don't use in Awake
+    [DependencyInjection] private Enemy m_enemy; //Don't use in Awake
     
     #region Main Fct
 
@@ -90,6 +94,14 @@ public class UiManager : MonoBehaviour
             MUIMagic.GetComponent<Button>().interactable = false;
             m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Enemy Turn";   
         }
+
+        UpdateHpUi();
+    }
+
+    public void UpdateHpUi()
+    {
+        m_uiPlayerHP.text = "Player HP : " + m_player.CurrentHealth.ToString();
+        m_uiEnemyHP.text = "Player HP : " + m_enemy.CurrentHealth.ToString();
     }
 
     public void SetWinLooseText(bool IsWin)
