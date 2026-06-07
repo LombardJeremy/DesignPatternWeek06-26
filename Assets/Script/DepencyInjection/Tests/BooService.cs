@@ -1,13 +1,14 @@
 using System;
 using UnityEngine;
 
+[Service]
 public class BooService : MonoBehaviour
 {
-    [DependencyInjection] private FooService m_fooService;
+    //[DependencyInjection] private FooService m_fooService;
     
     private void Start()
     {
-        if(m_fooService) m_fooService.FooSayHello();    
+        //if(m_fooService) m_fooService.FooSayHello();    
     }
 
     public void BooSayHello()

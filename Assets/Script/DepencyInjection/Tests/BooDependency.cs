@@ -5,6 +5,7 @@ using UnityEngine;
 public class BooDependency : MonoBehaviour
 {
     [DependencyInjection] private FooDependency m_fooDependency;
+    [DependencyInjection] private BooService m_booService;
 
     private void Start()
     {
@@ -15,6 +16,15 @@ public class BooDependency : MonoBehaviour
         else
         {
             Debug.LogWarning("FooDependency is invalid!");
+        }
+
+        if (m_booService)
+        {
+            m_booService.BooSayHello();
+        }
+        else
+        {
+            Debug.LogWarning("BooService is invalid!");
         }
     }
 }
