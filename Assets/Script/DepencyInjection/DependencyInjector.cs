@@ -32,28 +32,28 @@ public class DependencyInjector : MonoBehaviour
         GetGlobalServiceTypes();
         
         // Get all root objects
-        List<GameObject> rootGameObjects = new List<GameObject>();
+        List<GameObject> roots = new List<GameObject>();
         
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             Scene scene = SceneManager.GetSceneAt(i);
             
-            rootGameObjects.AddRange(scene.GetRootGameObjects());
+            roots.AddRange(scene.GetRootGameObjects());
         }
         
         // Dummy object to access game objects already in don't destroy on load scene
         GameObject ddolDummy =  new GameObject("DependencyInjectorDDOLDummy");
         DontDestroyOnLoad(ddolDummy);
-        rootGameObjects.AddRange(ddolDummy.scene.GetRootGameObjects());
+        roots.AddRange(ddolDummy.scene.GetRootGameObjects());
         Destroy(ddolDummy);
         
         // Create global services that should be instantiated
-        CreateGlobalServicesNotInScene(rootGameObjects);
+        CreateGlobalServicesNotInScene(roots);
         
         // Do injection
-        foreach (GameObject rootGameObject in rootGameObjects)
+        foreach (GameObject rootGameObject in roots)
         {
-            InjectDependenciesFromRoot(rootGameObject, rootGameObjects);
+            InjectDependenciesFromRoot(rootGameObject, roots);
         }
     }
     #region Services Search And Creation
@@ -78,7 +78,7 @@ public class DependencyInjector : MonoBehaviour
         }
     }
     
-    private void CreateGlobalServicesNotInScene(List<GameObject> rootGameObjects)
+    private void CreateGlobalServicesNotInScene(List<GameObject> roots)
     {
         foreach (Type serviceType in m_globalServiceTypes)
         {
@@ -90,7 +90,7 @@ public class DependencyInjector : MonoBehaviour
             GameObject go = new GameObject(singleServiceType.Name);
         
             DontDestroyOnLoad(go);
-            rootGameObjects.Add(go);
+            roots.Add(go);
             
             Component createdService = go.AddComponent(singleServiceType);
         
@@ -101,9 +101,9 @@ public class DependencyInjector : MonoBehaviour
 
     #region Injection
 
-    private void InjectDependenciesFromRoot(GameObject inGameObject, List<GameObject> rootGameObjects)
+    private void InjectDependenciesFromRoot(GameObject go, List<GameObject> roots)
     {
-        foreach (MonoBehaviour component in inGameObject.GetComponents<MonoBehaviour>())
+        foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
         {
             Type componentType = component.GetType();
             
@@ -112,11 +112,11 @@ public class DependencyInjector : MonoBehaviour
             {
                 if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
 
-                MonoBehaviour service = ResolveService(inGameObject, fieldInfo.FieldType, rootGameObjects);
+                MonoBehaviour service = ResolveService(go, fieldInfo.FieldType, roots);
                 
                 if(service == null)
                 {
-                    Debug.LogError("Couldn't find service for " + fieldInfo.Name);
+                    Debug.LogError("Couldn't find service for " + fieldInfo.Name + " in " + go.name);
                     continue;
                 }
                 
@@ -124,7 +124,7 @@ public class DependencyInjector : MonoBehaviour
             }
         }
         
-        foreach (Transform childTransform in inGameObject.transform) InjectDependenciesFromRoot(childTransform.gameObject, rootGameObjects);
+        foreach (Transform childTransform in go.transform) InjectDependenciesFromRoot(childTransform.gameObject, roots);
     }
 
     private MonoBehaviour ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
@@ -141,10 +141,10 @@ public class DependencyInjector : MonoBehaviour
         if (directParencyService != null) return directParencyService;
         
         // Scene scope
-        return ResolveSceneLocalService(rootGameObjects, serviceType);
+        return ResolveSceneLocalServiceFromRoots(rootGameObjects, serviceType, new List<InjectionScope> { InjectionScope.Scene });
     }
 
-    private MonoBehaviour ResolveKinLocalService(GameObject inGameObject, Type serviceType)
+    private MonoBehaviour ResolveKinLocalService(GameObject go, Type serviceType)
     {
         // I - Search in same game object for injector component with Game object scope 
         List<InjectionScope> searchValidScopes = new List<InjectionScope>
@@ -155,7 +155,7 @@ public class DependencyInjector : MonoBehaviour
             InjectionScope.Scene
         };
 
-        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceType, searchValidScopes);
+        MonoBehaviour serviceFound = FindLocalServiceInGameObject(go, serviceType, searchValidScopes);
                 
         if(serviceFound != null) return serviceFound;
                 
@@ -166,120 +166,108 @@ public class DependencyInjector : MonoBehaviour
         List<InjectionScope> childScopes = new List<InjectionScope> { InjectionScope.Parents, InjectionScope.Scene };
         
         MonoBehaviour parentService = null;
-        if (inGameObject.transform.parent != null)
+        if (go.transform.parent != null)
         {
-            parentService = FindFirstLocalServiceInParentGameObjects(inGameObject.transform.parent.gameObject, serviceType, parentScopes, ref parentDistance);
+            parentService = FindLocalServiceInAncestors(go.transform.parent.gameObject, serviceType, parentScopes, ref parentDistance);
         }
                 
         // Start search in children for injector component with Parent scope
         MonoBehaviour childService = null;
-        if (inGameObject.transform.childCount != 0)
+        if (go.transform.childCount != 0)
         {
-            childService = FindFirstLocalServiceInChildGameObjectsFromRoot(inGameObject, serviceType, childScopes, ref childDistance);
+            childService = FindLocalServiceInDescendants(go, serviceType, childScopes, ref childDistance);
         }
 
         return PickClosest(parentService, parentDistance, childService, childDistance);
     }
 
 
-    private MonoBehaviour FindLocalServiceInGameObject(GameObject inGameObject, Type serviceTypeToFind,
+    private MonoBehaviour FindLocalServiceInGameObject(GameObject go, Type serviceType,
         List<InjectionScope> validScopes)
     {
-        foreach (MonoBehaviour otherComponent in inGameObject.GetComponents<MonoBehaviour>())
+        foreach (MonoBehaviour otherComponent in go.GetComponents<MonoBehaviour>())
         {
             if (otherComponent is LocalServiceProvider localServiceProvider && validScopes.Contains(localServiceProvider.InjectionScope))
             {
                 MonoBehaviour serviceFound = localServiceProvider.ServiceComponents.Find((service) =>
                 {
-                    if(service == null) return false;
-                    
-                    return service.GetType() == serviceTypeToFind;
+                    return service != null && service.GetType() == serviceType;
                 });
 
-                if (serviceFound == null) continue;
-                            
-                return serviceFound;
+                if (serviceFound != null) return serviceFound;
             }
         }
         
         return null;
     }
 
-    private MonoBehaviour FindFirstLocalServiceInParentGameObjects(GameObject inGameObject, Type serviceTypeToFind,  List<InjectionScope> validScopes, ref int distance)
+    private MonoBehaviour FindLocalServiceInAncestors(GameObject go, Type serviceType,  List<InjectionScope> validScopes, ref int distance)
     {
         distance ++;
 
-        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceTypeToFind, validScopes);
+        MonoBehaviour serviceFound = FindLocalServiceInGameObject(go, serviceType, validScopes);
         
         if(serviceFound != null) return serviceFound;
 
-        if (inGameObject.transform.parent == null)
+        if (go.transform.parent == null)
         {
             return null;
         }
         
-        return FindFirstLocalServiceInParentGameObjects(inGameObject.transform.parent.gameObject, serviceTypeToFind, validScopes, ref distance);
-    }
-
-    private MonoBehaviour FindFirstLocalServiceInChildGameObjects(GameObject inGameObject, Type serviceTypeToFind, List<InjectionScope> validScopes, ref int distance)
-    {
-        distance ++;
-        
-        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceTypeToFind, validScopes);
-
-        if(serviceFound != null) return serviceFound;
-        
-        if (inGameObject.transform.childCount == 0) return null;
-        
-        return FindFirstLocalServiceInChildGameObjectsFromRoot(inGameObject, serviceTypeToFind, validScopes, ref distance);
+        return FindLocalServiceInAncestors(go.transform.parent.gameObject, serviceType, validScopes, ref distance);
     }
     
-    private MonoBehaviour FindFirstLocalServiceInChildGameObjectsFromRoot(GameObject root, Type serviceTypeToFind, List<InjectionScope> validScopes, ref int distance)
+    private MonoBehaviour FindLocalServiceInDescendants(GameObject root, Type serviceType, List<InjectionScope> validScopes, ref int distance)
     {
-        MonoBehaviour serviceFoundInChildren = null;
+        MonoBehaviour closestService = null;
         int closestDistance = -1;
         
-        foreach (Transform childTransform in root.transform)
+        foreach (Transform child in root.transform)
         {
-            int localDistance = distance;
+            int localDistance = distance + 1;
             
-            MonoBehaviour tempFoundService = FindFirstLocalServiceInChildGameObjects(childTransform.gameObject, serviceTypeToFind, validScopes, ref localDistance);
+            MonoBehaviour tempFound = FindLocalServiceInGameObject(child.gameObject, serviceType, validScopes);
             
-            if(tempFoundService == null || (localDistance >= closestDistance && closestDistance != -1)) continue;
+            if(tempFound == null && child.childCount > 0) 
+                tempFound = FindLocalServiceInDescendants(child.gameObject, serviceType, validScopes, ref localDistance);
             
-            closestDistance = localDistance;
-            serviceFoundInChildren = tempFoundService;
-            
-            // Since distance can't be less than zero, we stop prematurely because we won't find an object 'closer'.
-            if(closestDistance == 0) return serviceFoundInChildren;
+            if(tempFound != null && (closestDistance == -1 || localDistance < closestDistance ))
+            {
+                closestDistance = localDistance;
+                closestService = tempFound;
+            }
         }
         
         if(closestDistance != -1) distance = closestDistance;
-        return serviceFoundInChildren;
+        return closestService;
     }
     
     
-    private MonoBehaviour ResolveSceneLocalService(List<GameObject> rootGameObjects, Type serviceTypeToFind)
+    private MonoBehaviour ResolveSceneLocalServiceFromRoots(List<GameObject> roots, Type serviceType, List<InjectionScope> validScopes)
     {
-        MonoBehaviour serviceFound = null;
-        List<InjectionScope> validScopes = new List<InjectionScope>{InjectionScope.Scene};
+        MonoBehaviour closestService = null;
         int closestDistance = -1;
         
-        foreach (GameObject rootGameObject in rootGameObjects)
+        foreach (GameObject root in roots)
         {
-            int localDistance = -1;
-            MonoBehaviour tempFoundService = FindFirstLocalServiceInChildGameObjects(rootGameObject, serviceTypeToFind, validScopes, ref localDistance);
+            MonoBehaviour tempFoundService = FindLocalServiceInGameObject(root, serviceType, validScopes);
             
-            if(tempFoundService == null || (localDistance >= closestDistance && closestDistance != -1)) continue;
+            // If we find a service in a root,
+            // we return directly since there will be no closer hierarchical distance
+            if (tempFoundService != null)
+                return tempFoundService;
             
-            closestDistance = localDistance;
-            serviceFound = tempFoundService;
+            int localDistance = 0;
+            tempFoundService = FindLocalServiceInDescendants(root, serviceType, validScopes, ref localDistance);
             
-            // Since distance can't be less than zero, we stop prematurely because we won't find an object 'closer'.
-            if(closestDistance == 0) return serviceFound;
+            if(tempFoundService != null && (closestDistance == -1 || localDistance < closestDistance))
+            {
+                closestDistance = localDistance;
+                closestService = tempFoundService;
+            }
         }
         
-        return serviceFound;
+        return closestService;
     }
    
     #endregion
