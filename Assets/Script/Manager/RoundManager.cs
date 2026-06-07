@@ -13,11 +13,20 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     public ISnapshot MLastSnapshotToUse { get; set; }
     public Historic MHistoric { get; set; }
     private IActionCommand m_lastActionDone;
+    
+    // Round Counter
+    private int m_roundCounter = 0;
+    public int MRoundCounter
+    {
+        get => m_roundCounter;
+        set => m_roundCounter = value;
+    }
 
     #region Character
 
     // Characters Fields
-    [SerializeField] private Character m_player;
+    [SerializeField]
+    private Character m_player;
     [SerializeField] private Character m_enemy;
 
     public Character CurrentTarget { get; set; }
@@ -112,7 +121,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     //Simple Update between each round
     public void UpdateRound()
     {
-        if (m_currentCharacterPlayin == 0)
+        if (m_currentCharacterPlayin == 0) // End of player turn
         {
             m_currentCharacterPlayin = 1;
 
@@ -126,24 +135,34 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             }
 
             UnlockUI(false);
-
-            CommandSave command = new CommandSave(MHistoric, GetSnapshot());
-
             m_enemy.InitializeCharacter();
         }
-        else
+        else // End of enemy turn
         {
             m_currentCharacterPlayin = 0;
             if (m_player.IsDead)
             {
                 m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
+                
                 return;
             }
 
+            ChangeRound();
             UnlockUI(true);
+            
             m_player.InitializeCharacter();
         }
+    }
+
+    public void ChangeRound()
+    {
+        m_roundCounter += 1;
+        
+        CommandSave command = new CommandSave(MHistoric, GetSnapshot());
+        command.Do();
+        
+        m_uiManager.UpdateRound(m_roundCounter);
     }
 
     //DoAction depending on the player playing & if it's on himself

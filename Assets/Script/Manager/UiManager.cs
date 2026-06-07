@@ -19,6 +19,8 @@ public class UiManager : MonoBehaviour
     
     [SerializeField] private TextMeshProUGUI m_uiPlayerHP;
     [SerializeField] private TextMeshProUGUI m_uiEnemyHP;
+    
+    [SerializeField] private TextMeshProUGUI m_uiRoundCounter;
 
     #endregion
     #region Getter/Setter
@@ -102,6 +104,11 @@ public class UiManager : MonoBehaviour
     {
         m_uiPlayerHP.text = "Player HP : " + m_player.CurrentHealth.ToString();
         m_uiEnemyHP.text = "Player HP : " + m_enemy.CurrentHealth.ToString();
+    }
+
+    public void UpdateRound(int roundCounter)
+    {
+        m_uiRoundCounter.text = "Round Counter : " + roundCounter;
     }
 
     public void SetWinLooseText(bool IsWin)
