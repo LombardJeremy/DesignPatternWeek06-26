@@ -45,7 +45,7 @@ public static class DependencyInjector
         
         m_createdGlobalServices = false;
         m_globalServices.Clear();
-        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single); // We have to call it manually the first time
     }
     
     private static void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
@@ -60,15 +60,10 @@ public static class DependencyInjector
             m_createdGlobalServices = true;
         }
         
-        // Get all root objects
-        List<GameObject> roots = new List<GameObject>();
-        
-        roots.AddRange(scene.GetRootGameObjects());
-        
         // Do injection
-        foreach (GameObject root in roots)
+        foreach (GameObject root in scene.GetRootGameObjects())
         {
-            InjectDependenciesInGameObject(root, roots);
+            InjectDependenciesInGameObject(root, scene.GetRootGameObjects());
         }
     }
 
@@ -81,22 +76,12 @@ public static class DependencyInjector
 
     private static void GetGlobalServiceTypes()
     {
-        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-        foreach (Assembly assembly in assemblies)
-        {
-            bool nonUserAssembly = m_nonUserAssemblyPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix));
-
-            if (nonUserAssembly) continue;
-            
-            foreach (TypeInfo typeInfo in assembly.DefinedTypes)
-            {
-                if (typeInfo.HasAttribute<ServiceAttribute>())
-                {
-                    m_globalServiceTypes.Add(typeInfo.AsType());
-                }
-            }
-        }
+        m_globalServiceTypes = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(assembly => !m_nonUserAssemblyPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix)))
+            .SelectMany(assembly => assembly.DefinedTypes)
+            .Where(typeInfo => typeInfo.HasAttribute<ServiceAttribute>())
+            .Select(typeInfo => typeInfo.AsType())
+            .ToList();
     }
     
     private static void CreateAndGetGlobalServices()
@@ -146,7 +131,7 @@ public static class DependencyInjector
 
                 if (soServicesInstances.Count == 0)
                 {
-                    Debug.LogError("Type " + serviceType.Name + " of ScriptableObject is marked as 'Service', but no instance is present in the 'Assets' folder.");
+                    Debug.LogError($"ScriptableObject '{serviceType.Name}' is marked as 'Service', but no instance is present in the 'Assets' folder.");
                 }
                 else
                 {
@@ -154,12 +139,12 @@ public static class DependencyInjector
                 }
                 
                 if(soServicesInstances.Count > 1)
-                    Debug.LogWarning("Found more than one instance for ScriptableObject Service of type: " + serviceType.Name);
+                    Debug.LogWarning($"Found more than one instance of '{serviceType.Name}' ScriptableObject Service");
                 
                 continue;
             }
             
-            Debug.LogError("Type " + serviceType.Name + " is not supported for global service use. Don't use the 'Service' attribute for this type.");
+            Debug.LogError($"'{serviceType.Name}' is not supported for global service use. Don't use the 'Service' attribute for this type.");
         }
     }
     #endregion
@@ -168,53 +153,88 @@ public static class DependencyInjector
 
     private static void GlobalServiceToGlobalServiceInjection()
     {
-        foreach (var (serviceType, service) in m_globalServices)
+        Dictionary<Type, object> resolvedServices = new Dictionary<Type, object>();
+
+        object ResolveGlobalServiceCached(Type serviceType)
         {
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-            foreach (FieldInfo fieldInfo in serviceType.GetFields(flags))
-            {
-                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-                
-                object foundService = ResolveGlobalService(fieldInfo.FieldType);
-                
-                if(foundService == null)
-                {
-                    Debug.LogError("Global service to global service injection failed. Couldn't find service for " + fieldInfo.Name + " in " + serviceType.Name);
-                    continue;
-                }
-                
-                fieldInfo.SetValue(service, foundService);
-            }
+            // it's normal that it can return null, it means no service was found
+            // and we also cache that for future searches on the same go. 
+            if(resolvedServices.TryGetValue(serviceType, out object cachedService))
+                return cachedService;
+            
+            object service = ResolveGlobalService(serviceType);
+            resolvedServices.TryAdd(serviceType, service);
+            return service;
+        }
+        
+        foreach (var (receivingServiceType, receivingService) in m_globalServices)
+        {
+            InjectMembers(receivingService, receivingServiceType, ResolveGlobalServiceCached);
         }
     }
     
-    private static void InjectDependenciesInGameObject(GameObject go, List<GameObject> roots)
+    private static void InjectDependenciesInGameObject(GameObject go, GameObject[] roots)
     {
+        Dictionary<Type, object> resolvedServices = new Dictionary<Type, object>();
+
+        object ResolveServiceCached(Type serviceType)
+        {
+            // it's normal that it can return null, it means no service was found
+            // and we also cache that for future searches on the same go. 
+            if(resolvedServices.TryGetValue(serviceType, out object cachedService))
+                return cachedService;
+            
+            object service = ResolveService(go, serviceType, roots);
+            resolvedServices.TryAdd(serviceType, service);
+            return service;
+        }
+        
         foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
         {
-            Type componentType = component.GetType();
-            
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-            foreach (FieldInfo fieldInfo in componentType.GetFields(flags))
-            {
-                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-
-                object service = ResolveService(go, fieldInfo.FieldType, roots);
-                
-                if(service == null)
-                {
-                    Debug.LogError("Couldn't find service for " + fieldInfo.Name + " in " + go.name);
-                    continue;
-                }
-                
-                fieldInfo.SetValue(component, service);
-            }
+            InjectMembers(component, component.GetType(), ResolveServiceCached);
         }
         
         foreach (Transform childTransform in go.transform) InjectDependenciesInGameObject(childTransform.gameObject, roots);
     }
 
-    private static object ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
+    private static void InjectMembers(object target, Type targetType, Func<Type, object> resolveService)
+    {
+        BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        
+        foreach (FieldInfo fieldInfo in targetType.GetFields(flags))
+        {
+            if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+
+            object service = resolveService(fieldInfo.FieldType);
+                
+            if(service == null)
+            {
+                Debug.LogError($"Injection failed. Couldn't resolve field: {targetType.Name}.{fieldInfo.Name}");
+                continue;
+            }
+                
+            fieldInfo.SetValue(target, service);
+        }
+            
+        foreach (MethodInfo methodInfo in targetType.GetMethods(flags))
+        {
+            if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+            object[] parameters = methodInfo.GetParameters()
+                .Select(p => resolveService(p.ParameterType))
+                .ToArray();
+                
+            if (parameters.Any(p => p == null))
+            {
+                Debug.LogError($"Injection failed. Couldn't resolve one or more parameter of method: {targetType.Name}.{methodInfo.Name}");
+                continue;
+            }
+                
+            methodInfo.Invoke(target, parameters);
+        }
+    }
+
+    private static object ResolveService(GameObject inGameObject, Type serviceType, GameObject[]  rootGameObjects)
     {
         // I - Try global service injection first
         object globalService = ResolveGlobalService(serviceType);
@@ -277,20 +297,11 @@ public static class DependencyInjector
     private static MonoBehaviour FindLocalServiceInGameObject(GameObject go, Type serviceType,
         List<InjectionScope> validScopes)
     {
-        foreach (MonoBehaviour otherComponent in go.GetComponents<MonoBehaviour>())
-        {
-            if (otherComponent is LocalServiceProvider localServiceProvider && validScopes.Contains(localServiceProvider.InjectionScope))
-            {
-                MonoBehaviour serviceFound = localServiceProvider.ServiceComponents.Find((service) =>
-                {
-                    return service != null && service.GetType() == serviceType;
-                });
-
-                if (serviceFound != null) return serviceFound;
-            }
-        }
-        
-        return null;
+        return go.GetComponents<MonoBehaviour>()
+            .OfType<LocalServiceProvider>()
+            .Where(provider => validScopes.Contains(provider.InjectionScope))
+            .SelectMany(provider => provider.ServiceComponents)
+            .FirstOrDefault(service => service != null && service.GetType() == serviceType);
     }
 
     private static MonoBehaviour  FindLocalServiceInAncestors(GameObject go, Type serviceType,  List<InjectionScope> validScopes, ref int distance)
@@ -301,10 +312,7 @@ public static class DependencyInjector
         
         if(serviceFound != null) return serviceFound;
 
-        if (go.transform.parent == null)
-        {
-            return null;
-        }
+        if (go.transform.parent == null) return null;
         
         return FindLocalServiceInAncestors(go.transform.parent.gameObject, serviceType, validScopes, ref distance);
     }
@@ -335,7 +343,7 @@ public static class DependencyInjector
     }
     
     
-    private static MonoBehaviour ResolveSceneLocalServiceFromRoots(List<GameObject> roots, Type serviceType, List<InjectionScope> validScopes)
+    private static MonoBehaviour ResolveSceneLocalServiceFromRoots(GameObject[]  roots, Type serviceType, List<InjectionScope> validScopes)
     {
         MonoBehaviour closestService = null;
         int closestDistance = -1;
