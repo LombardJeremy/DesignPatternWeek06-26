@@ -12,7 +12,7 @@ public class FooDependency : MonoBehaviour
         }
         else
         {
-            Debug.Log("Foo Service is null");
+            //Debug.Log("Foo Service is null");
         }
     }
 

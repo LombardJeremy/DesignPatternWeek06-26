@@ -1,7 +1,5 @@
-using System;
 using UnityEngine;
 
-[Service]
 public class FooService : MonoBehaviour
 {
    [DependencyInjection] private BooService m_booService;
