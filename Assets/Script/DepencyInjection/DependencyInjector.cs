@@ -25,35 +25,44 @@ public static class DependencyInjector
     private static List<Type> m_globalServiceTypes = new List<Type>();
     private static Dictionary<Type, MonoBehaviour> m_globalServices = new Dictionary<Type, MonoBehaviour>();
 
+    private static bool m_initialized = false; 
     private static bool m_createdGlobalServices = false;
     
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Initialize()
     {
-        // Get all services types (used in certain places to simplify some algorithms)
-        GetGlobalServiceTypes();
+        if(!m_initialized)
+        {
+            // Get all services types (used in certain places to simplify some algorithms)
+            GetGlobalServiceTypes();
 
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        SceneManager.sceneUnloaded += OnSceneUnloaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            
+            m_initialized =  true;
+        }
         
+        m_createdGlobalServices = false;
+        m_globalServices.Clear();
         OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
     }
     
     private static void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
+        if (!m_createdGlobalServices)
+        {
+            // Create global services for the first time
+            CreateGlobalServicesNotInScene();
+
+            GlobalServiceToGlobalServiceInjection();
+
+            m_createdGlobalServices = true;
+        }
+        
         // Get all root objects
         List<GameObject> roots = new List<GameObject>();
         
         roots.AddRange(scene.GetRootGameObjects());
-        
-        // Dummy object to access game objects already in don't destroy on load scene
-        GameObject ddolDummy =  new GameObject("DependencyInjectorDDOLDummy");
-        Object.DontDestroyOnLoad(ddolDummy);
-        roots.AddRange(ddolDummy.scene.GetRootGameObjects());
-        Object.Destroy(ddolDummy);
-        
-        // Create global services that should be instantiated
-        CreateGlobalServicesNotInScene();
         
         // Do injection
         foreach (GameObject root in roots)
@@ -117,6 +126,28 @@ public static class DependencyInjector
 
     #region Injection
 
+    private static void GlobalServiceToGlobalServiceInjection()
+    {
+        foreach (var (serviceType, service) in m_globalServices)
+        {
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            foreach (FieldInfo fieldInfo in serviceType.GetFields(flags))
+            {
+                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+                MonoBehaviour foundService = ResolveGlobalService(fieldInfo.FieldType);
+                
+                if(foundService == null)
+                {
+                    Debug.LogError("Global service to global service injection failed. Couldn't find service for " + fieldInfo.Name + " in " + serviceType.Name);
+                    continue;
+                }
+                
+                fieldInfo.SetValue(service, foundService);
+            }
+        }
+    }
+    
     private static void InjectDependenciesInGameObject(GameObject go, List<GameObject> roots)
     {
         foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
@@ -146,18 +177,23 @@ public static class DependencyInjector
     private static MonoBehaviour ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
     {
         // I - Try global service injection first
-
-        if (m_globalServices.TryGetValue(serviceType, out MonoBehaviour globalServiceFound) && globalServiceFound != null)
-            return globalServiceFound;
+        MonoBehaviour globalService = ResolveGlobalService(serviceType);
+        if (globalService != null) return globalService;
                 
         // II - Then local service injection
-                
         // Kin scope (same go, parent/child)
         MonoBehaviour kinService = ResolveKinLocalService(inGameObject, serviceType);
         if (kinService != null) return kinService;
         
         // Scene scope
         return ResolveSceneLocalServiceFromRoots(rootGameObjects, serviceType, new List<InjectionScope> { InjectionScope.Scene });
+    }
+
+    private static MonoBehaviour ResolveGlobalService(Type serviceType)
+    {
+        m_globalServices.TryGetValue(serviceType, out MonoBehaviour globalServiceFound);
+
+        return globalServiceFound;
     }
 
     private static MonoBehaviour ResolveKinLocalService(GameObject go, Type serviceType)
