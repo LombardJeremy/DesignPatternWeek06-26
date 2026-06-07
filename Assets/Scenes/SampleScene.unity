@@ -8489,6 +8489,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   m_roundManager: {fileID: 1692226367}
+  m_mainMusicClip: {fileID: 8300000, guid: a54df1bdaca51d54ab413222add397d3, type: 3}
 --- !u!1001 &554462183
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18712,6 +18713,7 @@ GameObject:
   - component: {fileID: 1202948356}
   - component: {fileID: 1202948355}
   - component: {fileID: 1202948357}
+  - component: {fileID: 1202948358}
   m_Layer: 5
   m_Name: Defense
   m_TagString: Untagged
@@ -18832,6 +18834,36 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1202948358}
+        m_TargetAssemblyTypeName: SoundComponent, Assembly-CSharp
+        m_MethodName: PlaySFX2D
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1202948358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202948353}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6288e6b85adbb64f9c5cf4ea4e19871, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundComponent
+  m_clip: {fileID: 8300000, guid: d3d7317ee7c014644ab4accc13afaf65, type: 3}
+  m_volume: 1
+  m_pitch: 1
+  m_randomPitch: 1
+  m_lowPitchBound: 0.7
+  m_highPitchBound: 1.3
 --- !u!1001 &1212188011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22354,6 +22386,7 @@ GameObject:
   - component: {fileID: 1445170813}
   - component: {fileID: 1445170812}
   - component: {fileID: 1445170814}
+  - component: {fileID: 1445170815}
   m_Layer: 5
   m_Name: Attack
   m_TagString: Untagged
@@ -22474,6 +22507,36 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1445170815}
+        m_TargetAssemblyTypeName: SoundComponent, Assembly-CSharp
+        m_MethodName: PlaySFX2D
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1445170815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1445170810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6288e6b85adbb64f9c5cf4ea4e19871, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundComponent
+  m_clip: {fileID: 8300000, guid: d3d7317ee7c014644ab4accc13afaf65, type: 3}
+  m_volume: 1
+  m_pitch: 1
+  m_randomPitch: 1
+  m_lowPitchBound: 0.7
+  m_highPitchBound: 1.3
 --- !u!4 &1457257945 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 04634d4422539e74cb1dc9d424a3e149,
@@ -25651,6 +25714,7 @@ GameObject:
   - component: {fileID: 1718012265}
   - component: {fileID: 1718012264}
   - component: {fileID: 1718012266}
+  - component: {fileID: 1718012267}
   m_Layer: 5
   m_Name: Magic
   m_TagString: Untagged
@@ -25771,6 +25835,36 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1718012267}
+        m_TargetAssemblyTypeName: SoundComponent, Assembly-CSharp
+        m_MethodName: PlaySFX2D
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1718012267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718012262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6288e6b85adbb64f9c5cf4ea4e19871, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundComponent
+  m_clip: {fileID: 8300000, guid: d3d7317ee7c014644ab4accc13afaf65, type: 3}
+  m_volume: 1
+  m_pitch: 1
+  m_randomPitch: 1
+  m_lowPitchBound: 0.7
+  m_highPitchBound: 1.3
 --- !u!1001 &1720351129
 PrefabInstance:
   m_ObjectHideFlags: 0

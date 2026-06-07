@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 110b1e4cc9865c44fbff6306ca554b8d, type: 3}
+  m_Name: SoundSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SoundSettings
+  musicMixerGroup: {fileID: -2244733647768635472, guid: 7528d91102a162247a3ec38cb85b5467,
+    type: 2}
+  musicVolume: 1
+  musicFadeOutSpeed: 1
+  musicFadeInSpeed: 1
+  sfxMixerGroup: {fileID: 587249789032578069, guid: 7528d91102a162247a3ec38cb85b5467,
+    type: 2}
