@@ -171,22 +171,22 @@ public static class DependencyInjector
                 fieldInfo.SetValue(receivingService, foundService);
             }
             
-            // foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
-            // {
-            //     if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-            //     
-            //     object[] parameters = methodInfo.GetParameters()
-            //         .Select(p => ResolveGlobalService(p.ParameterType))
-            //         .ToArray();
-            //     
-            //     if (parameters.Any(p => p == null))
-            //     {
-            //         Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
-            //         continue;
-            //     }
-            //     
-            //     methodInfo.Invoke(receivingService, parameters);
-            // }
+            foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
+            {
+                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+                object[] parameters = methodInfo.GetParameters()
+                    .Select(p => ResolveGlobalService(p.ParameterType))
+                    .ToArray();
+                
+                if (parameters.Any(p => p == null))
+                {
+                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
+                    continue;
+                }
+                
+                methodInfo.Invoke(receivingService, parameters);
+            }
         }
     }
     
@@ -205,11 +205,28 @@ public static class DependencyInjector
                 
                 if(service == null)
                 {
-                    Debug.LogError($"Injection failed. Couldn't resolve field: {go.name}.{fieldInfo.Name}");
+                    Debug.LogError($"Injection failed. Couldn't resolve field: {go.name}.{componentType.Name}.{fieldInfo.Name}");
                     continue;
                 }
                 
                 fieldInfo.SetValue(component, service);
+            }
+            
+            foreach (MethodInfo methodInfo in componentType.GetMethods(flags))
+            {
+                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+                object[] parameters = methodInfo.GetParameters()
+                    .Select(p => ResolveService(go, p.ParameterType, roots))
+                    .ToArray();
+                
+                if (parameters.Any(p => p == null))
+                {
+                    Debug.LogError($"Injection failed. Couldn't resolve one or more parameter of method: {go.name}.{componentType.Name}.{methodInfo.Name}");
+                    continue;
+                }
+                
+                methodInfo.Invoke(component, parameters);
             }
         }
         

@@ -9,23 +9,29 @@ public class BooDependency : MonoBehaviour
 
     private void Start()
     {
-        if (m_fooDependency)
-            m_fooDependency.FooSayHello();
+        //Init(m_fooDependency, m_booService, m_customService, m_soService);
+    }
+
+    [DependencyInjection]
+    private void Init(FooDependency  fooDependency, BooService booService,  CustomService customService, SoService soService)
+    {
+        if (fooDependency)
+            fooDependency.FooSayHello();
         else
             Debug.LogWarning("FooDependency is invalid!");
 
-        if (m_booService)
-            m_booService.BooSayHello();
+        if (booService)
+            booService.BooSayHello();
         else
             Debug.LogWarning("BooService is invalid!");
         
-        if (m_customService != null)
-            m_customService.CustomSayHello();
+        if (customService != null)
+            customService.CustomSayHello();
         else
             Debug.LogWarning("BooService is invalid!");
         
-        if (m_soService)
-            m_soService.SoSayHello();
+        if (soService)
+            soService.SoSayHello();
         else
             Debug.LogWarning("BooService is invalid!");
     }

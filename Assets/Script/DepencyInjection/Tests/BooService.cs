@@ -10,9 +10,9 @@ public class BooService : MonoBehaviour
     
     private void Start()
     {
-        m_fooService?.FooSayHello();
-        m_customService?.CustomSayHello();
-        m_soService?.SoSayHello();
+        //m_fooService?.FooSayHello();
+        //m_customService?.CustomSayHello();
+        //m_soService?.SoSayHello();
     }
 
     public void BooSayHello()
