@@ -110,91 +110,77 @@ public class DependencyInjector : MonoBehaviour
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
             foreach (FieldInfo fieldInfo in componentType.GetFields(flags))
             {
-                if (fieldInfo.HasAttribute<DependencyInjectionAttribute>())
+                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+
+                MonoBehaviour service = ResolveService(inGameObject, fieldInfo.FieldType, rootGameObjects);
+                
+                if(service == null)
                 {
-                    // Try global service injection first
-
-                    if (m_globalServices.TryGetValue(fieldInfo.FieldType, out Component globalServiceFound))
-                    {
-                        if (globalServiceFound != null)
-                        {
-                            fieldInfo.SetValue(component, globalServiceFound);
-                        }  
-                        
-                        continue;
-                    }
-                    
-                    // Then do local injection
-                    
-                    // I - Search in same game object for injector component with Game object scope 
-                    List<InjectionScope> searchValidScopes = new List<InjectionScope>
-                    {
-                        InjectionScope.GameObject, 
-                        InjectionScope.Children, // I decided that Children scope also provide service to its own game object
-                        InjectionScope.Parents, // Same as children scope. (Same behavior as InitArgs)
-                        InjectionScope.Scene
-                    };
-
-                    MonoBehaviour serviceFound = FindLocalServiceInGameObject(component.gameObject, fieldInfo.FieldType, searchValidScopes);
-                    
-                    if(serviceFound != null)
-                    {
-                        fieldInfo.SetValue(component, serviceFound);
-                        continue;
-                    }
-                    
-                    // II - Else start search in the hierarchy
-                    // Start search in parents for injector component with children scope
-                    
-                    // 0 will be considered default value, meaning if it's still 0 after this step, the game object has no parent.
-                    // So there is no local service in parents.
-                    int parentDistance = 0; 
-                    MonoBehaviour serviceFoundInParent = null;
-                    if (inGameObject.transform.parent != null)
-                    {
-                        List<InjectionScope> searchInParentValidScopes = new List<InjectionScope>{ InjectionScope.Children, InjectionScope.Scene };
-                        serviceFoundInParent = FindFirstLocalServiceInParentGameObjects(inGameObject.transform.parent.gameObject, fieldInfo.FieldType, searchInParentValidScopes, ref parentDistance);
-                    }
-                    
-                    // Start search in children for injector component with Parent scope
-                    int childDistance = 0; 
-                    MonoBehaviour serviceFoundInChildren = null;
-                    if (inGameObject.transform.childCount != 0)
-                    {
-                        List<InjectionScope> validScopes = new List<InjectionScope> { InjectionScope.Parents, InjectionScope.Scene };
-                        serviceFoundInChildren = FindFirstLocalServiceInChildGameObjectsFromRoot(inGameObject, fieldInfo.FieldType, validScopes, ref childDistance);
-                    }
-
-                    // If found, check distance and use closest
-                    if(serviceFoundInChildren != null || serviceFoundInParent != null)
-                    {
-                        if(serviceFoundInParent == null) fieldInfo.SetValue(component, serviceFoundInChildren);
-                        else if(serviceFoundInChildren == null) fieldInfo.SetValue(component, serviceFoundInParent);
-                        else if (parentDistance <= childDistance) fieldInfo.SetValue(component, serviceFoundInParent);
-                        else fieldInfo.SetValue(component, serviceFoundInChildren);
-                        
-                        continue;
-                    }
-                    
-                    // III - Else search in from other roots for injector component with scene scope
-                    
-                    // Start from each root game object and return distance
-                    // Keep the one with shortest distance
-                    
-                    MonoBehaviour serviceFoundInScene = FindFirstSceneLocalServiceFromRoots(rootGameObjects, fieldInfo.FieldType);
-
-                    if (serviceFoundInScene != null)
-                    {
-                        fieldInfo.SetValue(component, serviceFoundInScene);
-                        continue;
-                    }
-                    // IV - At this point we didn't find any, we just continue
+                    Debug.LogError("Couldn't find service for " + fieldInfo.Name);
+                    continue;
                 }
+                
+                fieldInfo.SetValue(component, service);
             }
         }
         
         foreach (Transform childTransform in inGameObject.transform) InjectDependenciesFromRoot(childTransform.gameObject, rootGameObjects);
     }
+
+    private MonoBehaviour ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
+    {
+        // I - Try global service injection first
+
+        if (m_globalServices.TryGetValue(serviceType, out Component globalServiceFound) && globalServiceFound != null)
+            return globalServiceFound as MonoBehaviour;
+                
+        // II - Then local service injection
+                
+        // Kin scope (same go, parent/child)
+        MonoBehaviour directParencyService = ResolveKinLocalService(inGameObject, serviceType);
+        if (directParencyService != null) return directParencyService;
+        
+        // Scene scope
+        return ResolveSceneLocalService(rootGameObjects, serviceType);
+    }
+
+    private MonoBehaviour ResolveKinLocalService(GameObject inGameObject, Type serviceType)
+    {
+        // I - Search in same game object for injector component with Game object scope 
+        List<InjectionScope> searchValidScopes = new List<InjectionScope>
+        {
+            InjectionScope.GameObject, 
+            InjectionScope.Children, // I decided that Children scope also provide service to its own game object
+            InjectionScope.Parents, // Same as children scope. (Same behavior as InitArgs)
+            InjectionScope.Scene
+        };
+
+        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceType, searchValidScopes);
+                
+        if(serviceFound != null) return serviceFound;
+                
+        // II - Else start search in kin
+                
+        int parentDistance = 0, childDistance  = 0; 
+        List<InjectionScope> parentScopes = new List<InjectionScope>{ InjectionScope.Children, InjectionScope.Scene };
+        List<InjectionScope> childScopes = new List<InjectionScope> { InjectionScope.Parents, InjectionScope.Scene };
+        
+        MonoBehaviour parentService = null;
+        if (inGameObject.transform.parent != null)
+        {
+            parentService = FindFirstLocalServiceInParentGameObjects(inGameObject.transform.parent.gameObject, serviceType, parentScopes, ref parentDistance);
+        }
+                
+        // Start search in children for injector component with Parent scope
+        MonoBehaviour childService = null;
+        if (inGameObject.transform.childCount != 0)
+        {
+            childService = FindFirstLocalServiceInChildGameObjectsFromRoot(inGameObject, serviceType, childScopes, ref childDistance);
+        }
+
+        return PickClosest(parentService, parentDistance, childService, childDistance);
+    }
+
 
     private MonoBehaviour FindLocalServiceInGameObject(GameObject inGameObject, Type serviceTypeToFind,
         List<InjectionScope> validScopes)
@@ -273,7 +259,7 @@ public class DependencyInjector : MonoBehaviour
     }
     
     
-    private MonoBehaviour FindFirstSceneLocalServiceFromRoots(List<GameObject> rootGameObjects, Type serviceTypeToFind)
+    private MonoBehaviour ResolveSceneLocalService(List<GameObject> rootGameObjects, Type serviceTypeToFind)
     {
         MonoBehaviour serviceFound = null;
         List<InjectionScope> validScopes = new List<InjectionScope>{InjectionScope.Scene};
@@ -297,4 +283,12 @@ public class DependencyInjector : MonoBehaviour
     }
    
     #endregion
+    
+    private static MonoBehaviour PickClosest(MonoBehaviour a, int distA, MonoBehaviour b,
+        int distB)
+    {
+        if (a == null) return b;
+        if(b == null) return a;
+        return distA <= distB ? a : b;
+    }
 }

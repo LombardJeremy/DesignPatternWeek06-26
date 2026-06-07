@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class FooDependency : MonoBehaviour
 {
-    [DependencyInjection] private FooService m_fooService;
+    private FooService m_fooService;
 
     private void Start()
     {
