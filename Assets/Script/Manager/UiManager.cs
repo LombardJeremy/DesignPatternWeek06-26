@@ -111,6 +111,12 @@ public class UiManager : MonoBehaviour
         m_uiRoundCounter.text = "Round Counter : " + roundCounter;
     }
 
+    public void GoBackOneRound()
+    {
+        //TODO
+        
+    }
+
     public void SetWinLooseText(bool IsWin)
     {
         

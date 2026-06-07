@@ -83,7 +83,6 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     
     // Apply Snapshot at current Time
     void ISnapshotProvider.ApplySnapshot(ISnapshot snapshot) => snapshot.Apply();
-    
 
     private void Awake() //Only 1 copy
     {
@@ -163,6 +162,16 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
         command.Do();
         
         m_uiManager.UpdateRound(m_roundCounter);
+    }
+
+    public void GoBackOneRound()
+    {
+        CommandLoad command = new CommandLoad(MHistoric, this);
+        command.Do();
+        
+        MLastSnapshotToUse.Apply();
+        
+        // TODO Setup Rounds
     }
 
     //DoAction depending on the player playing & if it's on himself
