@@ -158,7 +158,7 @@ public class DependencyInjector : MonoBehaviour
                         }
                     }
                     
-                    if(foundNeededService) break;
+                    if(foundNeededService) continue;
                     
                     // II - Else start search in the hierarchy
                     // Start search in parents for injector component with children scope
@@ -191,7 +191,7 @@ public class DependencyInjector : MonoBehaviour
                         else if (parentDistance <= childDistance) fieldInfo.SetValue(component, serviceFoundInParent);
                         else fieldInfo.SetValue(component, serviceFoundInChildren);
                         
-                        break;
+                        continue;
                     }
                     
                     // III - Else search in from other roots for injector component with scene scope
@@ -205,7 +205,7 @@ public class DependencyInjector : MonoBehaviour
                     if (foundNeededService)
                     {
                         fieldInfo.SetValue(component, serviceFoundInScene);
-                        break;
+                        continue;
                     }
                     // IV - At this point we didn't find any, we just continue
                 }
