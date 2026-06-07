@@ -8,7 +8,6 @@ public class SoundManager : MonoBehaviour
 {
     private AudioSource m_musicSource;
 
-    [DependencyInjection] private SoundSettings m_soundSettings;
     private float m_musicFadeOutSpeed = 1.0f;
     private float m_musicFadeInSpeed = 1.0f;
     private AudioMixerGroup m_sfxMixerGroup;
@@ -36,17 +35,21 @@ public class SoundManager : MonoBehaviour
     private void Awake()
     {
         InitSingleton();
+    }
 
+    [DependencyInjection]
+    private void Init(SoundSettings soundSettings)
+    {
         m_musicSource = gameObject.AddComponent<AudioSource>();
         m_musicSource.loop = true;
-        if (m_soundSettings)
-        {
-            m_musicFadeOutSpeed = m_soundSettings.musicFadeOutSpeed;
-            m_musicFadeInSpeed = m_soundSettings.musicFadeInSpeed;
-            m_sfxMixerGroup = m_soundSettings.sfxMixerGroup;
-            m_musicSource.volume = m_soundSettings.musicVolume;
-            m_musicSource.outputAudioMixerGroup = m_soundSettings.musicMixerGroup;
-        }
+        
+        if (!soundSettings) return;
+        
+        m_musicFadeOutSpeed = soundSettings.musicFadeOutSpeed;
+        m_musicFadeInSpeed = soundSettings.musicFadeInSpeed;
+        m_sfxMixerGroup = soundSettings.sfxMixerGroup;
+        m_musicSource.volume = soundSettings.musicVolume;
+        m_musicSource.outputAudioMixerGroup = soundSettings.musicMixerGroup;
     }
 
     private void OnDestroy()

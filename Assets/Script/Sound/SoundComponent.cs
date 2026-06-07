@@ -41,4 +41,9 @@ public class SoundComponent : MonoBehaviour
         
         m_soundManager.PlaySFX3D(m_clip, transform.position, m_volume, pitch);
     }
+    
+    public void SetClip(AudioClip clip)
+    {
+        m_clip = clip;
+    }
 }

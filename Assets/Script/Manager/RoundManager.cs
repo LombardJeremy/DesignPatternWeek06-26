@@ -5,12 +5,14 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     // Instance of the Manager
     private static RoundManager s_instance;
     private IActionCommand m_lastActionDone;
-
+    
     // Round Counter
 
     // Inject UIManager to lock and unlock UI
     [DependencyInjection] private UiManager m_uiManager;
-
+    [DependencyInjection] private SoundComponent m_soundComponent;
+    
+    
     // Memento + Action
     public ISnapshot MLastSnapshotToUse { get; set; }
     public Historic MHistoric { get; set; }
@@ -25,8 +27,11 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
 
     [SerializeField] private Character m_enemy;
     [SerializeField] private Animator m_animatorEnemy;
-
-
+    
+    // Sounds
+    [SerializeField] private AudioClip m_attackSound;
+    [SerializeField] private AudioClip m_healSound;
+    
     public Character CurrentTarget { get; set; }
 
     private int m_currentCharacterPlayin = 1;
@@ -218,9 +223,13 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             {
                 case ActionType.ATTACK:
                     m_animatorPlayer.SetTrigger("Attack");
+                    m_soundComponent.SetClip(m_attackSound);
+                    m_soundComponent.PlaySFX2D();
                     break;
                 case ActionType.DEFENSE:
                     m_animatorPlayer.SetTrigger("Hit");
+                    m_soundComponent.SetClip(m_healSound);
+                    m_soundComponent.PlaySFX2D();
                     break;
             }
         }
@@ -231,9 +240,13 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             {
                 case ActionType.ATTACK:
                     m_animatorEnemy.SetTrigger("Attack");
+                    m_soundComponent.SetClip(m_attackSound);
+                    m_soundComponent.PlaySFX2D();
                     break;
                 case ActionType.DEFENSE:
                     m_animatorEnemy.SetTrigger("Hit");
+                    m_soundComponent.SetClip(m_healSound);
+                    m_soundComponent.PlaySFX2D();
                     break;
             }
         }
