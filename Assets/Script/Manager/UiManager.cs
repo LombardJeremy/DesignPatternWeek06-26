@@ -12,6 +12,8 @@ public class UiManager : MonoBehaviour
     [SerializeField] private GameObject m_uiAttack; //0
     [SerializeField] private GameObject m_uiDefense; //1
     [SerializeField] private GameObject m_uiMagic; //2
+    [SerializeField] private GameObject m_uiDo; // Do
+    [SerializeField] private GameObject m_uiUndo; // & Undo
     private List<GameObject> m_uiList = new List<GameObject>();
 
     [SerializeField] private GameObject m_uiTurnIndicatorText;
@@ -88,6 +90,8 @@ public class UiManager : MonoBehaviour
             MUIAttack.GetComponent<Button>().interactable = true;
             MUIDefense.GetComponent<Button>().interactable = true;
             MUIMagic.GetComponent<Button>().interactable = true;
+            m_uiDo.GetComponent<Button>().interactable = true;
+            m_uiUndo.GetComponent<Button>().interactable = true;
             m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Player Turn";
         }
         else
@@ -95,6 +99,8 @@ public class UiManager : MonoBehaviour
             MUIAttack.GetComponent<Button>().interactable = false;
             MUIDefense.GetComponent<Button>().interactable = false;
             MUIMagic.GetComponent<Button>().interactable = false;
+            m_uiDo.GetComponent<Button>().interactable = false;
+            m_uiUndo.GetComponent<Button>().interactable = false;
             m_uiTurnIndicatorText.GetComponent<TextMeshProUGUI>().text = "Current Turn : Enemy Turn";   
         }
 
@@ -114,8 +120,12 @@ public class UiManager : MonoBehaviour
 
     public void GoBackOneRound()
     {
-        //TODO
         m_round.GoBackOneRound();
+    }
+
+    public void UndoGoBackOneRound()
+    {
+        m_round.UndoGoBackOneRound();
     }
 
     public void SetWinLooseText(bool IsWin)

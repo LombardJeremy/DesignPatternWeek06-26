@@ -9,7 +9,6 @@ public class ActionCommandMagic : IActionCommand
     }
     public bool Execute(Character self, Character target)
     {
-        //TODO : Attack Execution sophisticated
         target.RemoveHealth(self.CurrentAttack * 2);
         
         //TODO : return state

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ActionCommandDefense : IActionCommand
 {
-    private ActionType m_ActionType = ActionType.ATTACK;
+    private ActionType m_ActionType = ActionType.DEFENSE;
     public ActionType ActionType { 
         get => m_ActionType;
         set => m_ActionType = value;

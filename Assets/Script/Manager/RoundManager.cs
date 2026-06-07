@@ -21,8 +21,11 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
 
     // Characters Fields
     [SerializeField] private Character m_player;
+    [SerializeField] private Animator m_animatorPlayer;
 
     [SerializeField] private Character m_enemy;
+    [SerializeField] private Animator m_animatorEnemy;
+
 
     public Character CurrentTarget { get; set; }
 
@@ -104,6 +107,8 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     {
         m_player.ActionDeclaration += EndOfActionDeclaration;
         m_enemy.ActionDeclaration += EndOfActionDeclaration;
+        m_animatorPlayer = m_player.GetComponentInChildren<Animator>();
+        m_animatorEnemy = m_enemy.GetComponentInChildren<Animator>();
     }
 
     private void OnDestroy()
@@ -133,7 +138,9 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             {
                 m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
+                m_animatorPlayer.SetTrigger("Die");
             }
+            
             UnlockUI(true);
             if( !isLoaded) ChangeRound();
         }
@@ -142,8 +149,10 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             if (m_enemy.IsDead)
             {
                 m_uiManager.SetWinLooseText(true);
+                m_animatorEnemy.SetTrigger("Die");
                 return;
             }
+            
             UnlockUI(false);
         }
     }
@@ -187,15 +196,52 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
         m_uiManager.UpdateRound(MRoundCounter);
     }
 
+    public void UndoGoBackOneRound()
+    {
+        var command = new CommandLoad(MHistoric, this);
+        command.Undo();
+        
+        MLastSnapshotToUse.Apply();
+        
+        UpdateRound(true);
+        m_uiManager.UpdateRound(MRoundCounter);
+    }
+
 
     //DoAction depending on the player playing & if it's on himself
     public void DoAction(IActionCommand action, bool castOnSelf)
     {
         m_lastActionDone = action;
         if (m_currentCharacterPlayin == 0)
+        {
             action.Execute(m_player, castOnSelf ? m_player : m_enemy);
+            switch (action.ActionType)
+            {
+                case ActionType.ATTACK:
+                    m_animatorPlayer.SetTrigger("Attack");
+                    break;
+                case ActionType.DEFENSE:
+                    m_animatorPlayer.SetTrigger("Hit");
+                    break;
+                default:
+                    break;
+            }
+        }
         else
+        {
             action.Execute(m_enemy, castOnSelf ? m_enemy : m_player);
+            switch (action.ActionType)
+            {
+                case ActionType.ATTACK:
+                    m_animatorEnemy.SetTrigger("Attack");
+                    break;
+                case ActionType.DEFENSE:
+                    m_animatorEnemy.SetTrigger("Hit");
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     public void UnlockUI(bool isUnlocked) //Lock / Unlock UI
