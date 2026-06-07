@@ -9,7 +9,6 @@ public class ActionCommandAttack : IActionCommand
     }
     public bool Execute(Character self, Character target)
     {
-        //TODO : Attack Execution sophisticated
         target.RemoveHealth(self.CurrentAttack);
         
         //TODO : return state

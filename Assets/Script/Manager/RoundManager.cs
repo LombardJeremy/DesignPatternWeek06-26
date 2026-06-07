@@ -133,16 +133,15 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     {
         if (m_currentCharacterPlayin == 0) // Begin of player turn
         {
-            
             if (m_player.IsDead)
             {
                 m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
                 m_animatorPlayer.SetTrigger("Die");
             }
-            
+
             UnlockUI(true);
-            if( !isLoaded) ChangeRound();
+            if (!isLoaded) ChangeRound();
         }
         else // Begin of enemy turn
         {
@@ -152,7 +151,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
                 m_animatorEnemy.SetTrigger("Die");
                 return;
             }
-            
+
             UnlockUI(false);
         }
     }
@@ -166,7 +165,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             UpdateRound(false);
             m_enemy.InitializeCharacter();
         }
-        else 
+        else
         {
             // End of enemy turn
             m_currentCharacterPlayin = 0;
@@ -178,9 +177,9 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     public void ChangeRound()
     {
         MRoundCounter += 1;
-        
+
         m_uiManager.UpdateRound(MRoundCounter);
-        
+
         var command = new CommandSave(MHistoric, GetSnapshot());
         command.Do();
     }
@@ -200,9 +199,9 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     {
         var command = new CommandLoad(MHistoric, this);
         command.Undo();
-        
+
         MLastSnapshotToUse.Apply();
-        
+
         UpdateRound(true);
         m_uiManager.UpdateRound(MRoundCounter);
     }
@@ -223,8 +222,6 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
                 case ActionType.DEFENSE:
                     m_animatorPlayer.SetTrigger("Hit");
                     break;
-                default:
-                    break;
             }
         }
         else
@@ -237,8 +234,6 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
                     break;
                 case ActionType.DEFENSE:
                     m_animatorEnemy.SetTrigger("Hit");
-                    break;
-                default:
                     break;
             }
         }

@@ -1,12 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public class Historic
 {
-    private List<ISnapshot> snapshots = new List<ISnapshot>();
-    
-    private ISnapshot m_lastDeletedSnapshot;
-    public ISnapshot  LastDeletedSnapshot => m_lastDeletedSnapshot;
+    private readonly List<ISnapshot> snapshots = new();
+    public ISnapshot LastDeletedSnapshot { get; private set; }
 
     public void SaveSnapshot(ISnapshot snapshot)
     {
@@ -22,27 +19,23 @@ public class Historic
     {
         snapshots.Clear();
     }
-    
+
     public ISnapshot GetLastUsedSnapShotAndRemoveLast()
     {
         ISnapshot lastUsedSnapshot;
         if (snapshots.Count < 2)
-        {
             lastUsedSnapshot = snapshots[^1];
-        }
         else
-        {
             lastUsedSnapshot = snapshots[^2];
-        }
-        ISnapshot lastSnapshot = snapshots[^1];
+        var lastSnapshot = snapshots[^1];
         snapshots.Remove(lastSnapshot);
-        m_lastDeletedSnapshot = lastSnapshot;
+        LastDeletedSnapshot = lastSnapshot;
         return lastUsedSnapshot;
     }
 
     public void RemoveSnapshot(ISnapshot snapshot)
     {
         snapshots.Remove(snapshot);
-        m_lastDeletedSnapshot = snapshot;
+        LastDeletedSnapshot = snapshot;
     }
 }

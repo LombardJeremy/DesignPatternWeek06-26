@@ -1,4 +1,4 @@
-using UnityEngine;
+
 
 //Main Snapshot -> Apply fct
 public interface ISnapshot
@@ -7,7 +7,7 @@ public interface ISnapshot
 }
 
 //Snapshot Provider required to access all object that CAN be snapshoted
-interface ISnapshotProvider
+internal interface ISnapshotProvider
 {
     ISnapshot GetSnapshot();
     void ApplySnapshot(ISnapshot snapshot);
