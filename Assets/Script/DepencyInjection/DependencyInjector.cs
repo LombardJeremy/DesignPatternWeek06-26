@@ -22,7 +22,7 @@ public class DependencyInjector : MonoBehaviour
     };
     
     private List<Type> m_globalServiceTypes = new List<Type>();
-    private Dictionary<Type, Component> m_globalServices = new Dictionary<Type, Component>();
+    private Dictionary<Type, MonoBehaviour> m_monoBehaviorGlobalServices = new Dictionary<Type, MonoBehaviour>();
     
     private List<LocalServiceProvider> m_injectorComponents = new List<LocalServiceProvider>();
     
@@ -51,9 +51,9 @@ public class DependencyInjector : MonoBehaviour
         CreateGlobalServicesNotInScene(roots);
         
         // Do injection
-        foreach (GameObject rootGameObject in roots)
+        foreach (GameObject root in roots)
         {
-            InjectDependenciesFromRoot(rootGameObject, roots);
+            InjectDependenciesInGameObject(root, roots);
         }
     }
     #region Services Search And Creation
@@ -82,26 +82,32 @@ public class DependencyInjector : MonoBehaviour
     {
         foreach (Type serviceType in m_globalServiceTypes)
         {
-            ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
-            if(serviceAttribute == null) continue;
+            if (serviceType.IsAssignableFrom(typeof(MonoBehaviour)))
+            {
+                ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
+                if(serviceAttribute == null) continue;
 
-            // For global service that should be instantiated by the injector
-            Type singleServiceType = serviceType;
-            GameObject go = new GameObject(singleServiceType.Name);
+                // For global service that should be instantiated by the injector
+                Type singleServiceType = serviceType;
+                GameObject go = new GameObject(singleServiceType.Name);
         
-            DontDestroyOnLoad(go);
-            roots.Add(go);
+                DontDestroyOnLoad(go);
+                roots.Add(go);
             
-            Component createdService = go.AddComponent(singleServiceType);
+                MonoBehaviour createdService = go.AddComponent(singleServiceType) as MonoBehaviour;
         
-            m_globalServices.TryAdd(singleServiceType, createdService);
+                m_monoBehaviorGlobalServices.TryAdd(singleServiceType, createdService);
+                continue;
+            }
+            
+            Debug.LogError("Type " + serviceType.Name + " is not supporter for global service use. Don't use the 'Service' attribute for this type.");
         }
     }
     #endregion
 
     #region Injection
 
-    private void InjectDependenciesFromRoot(GameObject go, List<GameObject> roots)
+    private void InjectDependenciesInGameObject(GameObject go, List<GameObject> roots)
     {
         foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
         {
@@ -124,15 +130,15 @@ public class DependencyInjector : MonoBehaviour
             }
         }
         
-        foreach (Transform childTransform in go.transform) InjectDependenciesFromRoot(childTransform.gameObject, roots);
+        foreach (Transform childTransform in go.transform) InjectDependenciesInGameObject(childTransform.gameObject, roots);
     }
 
     private MonoBehaviour ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
     {
         // I - Try global service injection first
 
-        if (m_globalServices.TryGetValue(serviceType, out Component globalServiceFound) && globalServiceFound != null)
-            return globalServiceFound as MonoBehaviour;
+        if (m_monoBehaviorGlobalServices.TryGetValue(serviceType, out MonoBehaviour globalServiceFound) && globalServiceFound != null)
+            return globalServiceFound;
                 
         // II - Then local service injection
                 
@@ -272,6 +278,8 @@ public class DependencyInjector : MonoBehaviour
    
     #endregion
     
+    #region Utilities
+    
     private static MonoBehaviour PickClosest(MonoBehaviour a, int distA, MonoBehaviour b,
         int distB)
     {
@@ -279,4 +287,6 @@ public class DependencyInjector : MonoBehaviour
         if(b == null) return a;
         return distA <= distB ? a : b;
     }
+    
+    #endregion
 }
