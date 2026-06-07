@@ -81,19 +81,12 @@ public static class DependencyInjector
 
     private static void GetGlobalServiceTypes()
     {
-        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-        foreach (Assembly assembly in assemblies)
-        {
-            bool nonUserAssembly = m_nonUserAssemblyPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix));
-
-            if (nonUserAssembly) continue;
-            
-            m_globalServiceTypes = assembly.DefinedTypes
-                .Where(typeInfo => typeInfo.HasAttribute<ServiceAttribute>())
-                .Select(typeInfo => typeInfo.AsType())
-                .ToList();
-        }
+        m_globalServiceTypes = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(assembly => !m_nonUserAssemblyPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix)))
+            .SelectMany(assembly => assembly.DefinedTypes)
+            .Where(typeInfo => typeInfo.HasAttribute<ServiceAttribute>())
+            .Select(typeInfo => typeInfo.AsType())
+            .ToList();
     }
     
     private static void CreateAndGetGlobalServices()
@@ -183,22 +176,22 @@ public static class DependencyInjector
                 fieldInfo.SetValue(receivingService, foundService);
             }
             
-            foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
-            {
-                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-                
-                object[] parameters = methodInfo.GetParameters()
-                    .Select(p => ResolveGlobalService(p.ParameterType))
-                    .ToArray();
-                
-                if (parameters.Any(p => p == null))
-                {
-                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
-                    continue;
-                }
-                
-                methodInfo.Invoke(receivingService, parameters);
-            }
+            // foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
+            // {
+            //     if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+            //     
+            //     object[] parameters = methodInfo.GetParameters()
+            //         .Select(p => ResolveGlobalService(p.ParameterType))
+            //         .ToArray();
+            //     
+            //     if (parameters.Any(p => p == null))
+            //     {
+            //         Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
+            //         continue;
+            //     }
+            //     
+            //     methodInfo.Invoke(receivingService, parameters);
+            // }
         }
     }
     
