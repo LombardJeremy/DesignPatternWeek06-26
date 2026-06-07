@@ -153,84 +153,85 @@ public static class DependencyInjector
 
     private static void GlobalServiceToGlobalServiceInjection()
     {
+        Dictionary<Type, object> resolvedServices = new Dictionary<Type, object>();
+
+        object ResolveGlobalServiceCached(Type serviceType)
+        {
+            // it's normal that it can return null, it means no service was found
+            // and we also cache that for future searches on the same go. 
+            if(resolvedServices.TryGetValue(serviceType, out object cachedService))
+                return cachedService;
+            
+            object service = ResolveGlobalService(serviceType);
+            resolvedServices.TryAdd(serviceType, service);
+            return service;
+        }
+        
         foreach (var (receivingServiceType, receivingService) in m_globalServices)
         {
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-            foreach (FieldInfo fieldInfo in receivingServiceType.GetFields(flags))
-            {
-                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-                
-                object foundService = ResolveGlobalService(fieldInfo.FieldType);
-                
-                if(foundService == null)
-                {
-                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve field: {receivingServiceType.Name}.{fieldInfo.Name}");
-                    continue;
-                }
-                
-                fieldInfo.SetValue(receivingService, foundService);
-            }
-            
-            foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
-            {
-                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-                
-                object[] parameters = methodInfo.GetParameters()
-                    .Select(p => ResolveGlobalService(p.ParameterType))
-                    .ToArray();
-                
-                if (parameters.Any(p => p == null))
-                {
-                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
-                    continue;
-                }
-                
-                methodInfo.Invoke(receivingService, parameters);
-            }
+            InjectMembers(receivingService, receivingServiceType, ResolveGlobalServiceCached);
         }
     }
     
     private static void InjectDependenciesInGameObject(GameObject go, GameObject[] roots)
     {
+        Dictionary<Type, object> resolvedServices = new Dictionary<Type, object>();
+
+        object ResolveServiceCached(Type serviceType)
+        {
+            // it's normal that it can return null, it means no service was found
+            // and we also cache that for future searches on the same go. 
+            if(resolvedServices.TryGetValue(serviceType, out object cachedService))
+                return cachedService;
+            
+            object service = ResolveService(go, serviceType, roots);
+            resolvedServices.TryAdd(serviceType, service);
+            return service;
+        }
+        
         foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
         {
-            Type componentType = component.GetType();
-            
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-            foreach (FieldInfo fieldInfo in componentType.GetFields(flags))
-            {
-                if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-
-                object service = ResolveService(go, fieldInfo.FieldType, roots);
-                
-                if(service == null)
-                {
-                    Debug.LogError($"Injection failed. Couldn't resolve field: {go.name}.{componentType.Name}.{fieldInfo.Name}");
-                    continue;
-                }
-                
-                fieldInfo.SetValue(component, service);
-            }
-            
-            foreach (MethodInfo methodInfo in componentType.GetMethods(flags))
-            {
-                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
-                
-                object[] parameters = methodInfo.GetParameters()
-                    .Select(p => ResolveService(go, p.ParameterType, roots))
-                    .ToArray();
-                
-                if (parameters.Any(p => p == null))
-                {
-                    Debug.LogError($"Injection failed. Couldn't resolve one or more parameter of method: {go.name}.{componentType.Name}.{methodInfo.Name}");
-                    continue;
-                }
-                
-                methodInfo.Invoke(component, parameters);
-            }
+            InjectMembers(component, component.GetType(), ResolveServiceCached);
         }
         
         foreach (Transform childTransform in go.transform) InjectDependenciesInGameObject(childTransform.gameObject, roots);
+    }
+
+    private static void InjectMembers(object target, Type targetType, Func<Type, object> resolveService)
+    {
+        BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        
+        foreach (FieldInfo fieldInfo in targetType.GetFields(flags))
+        {
+            if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+
+            object service = resolveService(fieldInfo.FieldType);
+                
+            if(service == null)
+            {
+                Debug.LogError($"Injection failed. Couldn't resolve field: {targetType.Name}.{fieldInfo.Name}");
+                continue;
+            }
+                
+            fieldInfo.SetValue(target, service);
+        }
+            
+        foreach (MethodInfo methodInfo in targetType.GetMethods(flags))
+        {
+            if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+            object[] parameters = methodInfo.GetParameters()
+                .Select(p => resolveService(p.ParameterType))
+                .ToArray();
+                
+            if (parameters.Any(p => p == null))
+            {
+                Debug.LogError($"Injection failed. Couldn't resolve one or more parameter of method: {targetType.Name}.{methodInfo.Name}");
+                continue;
+            }
+                
+            methodInfo.Invoke(target, parameters);
+        }
     }
 
     private static object ResolveService(GameObject inGameObject, Type serviceType, GameObject[]  rootGameObjects)
