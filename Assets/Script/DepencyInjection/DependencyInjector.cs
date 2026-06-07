@@ -235,6 +235,19 @@ public class DependencyInjector : MonoBehaviour
         return FindFirstLocalServiceInParentGameObjects(inGameObject.transform.parent.gameObject, serviceTypeToFind, validScopes, ref distance);
     }
 
+    private MonoBehaviour FindFirstLocalServiceInChildGameObjects(GameObject inGameObject, Type serviceTypeToFind, List<InjectionScope> validScopes, ref int distance)
+    {
+        distance ++;
+        
+        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceTypeToFind, validScopes);
+
+        if(serviceFound != null) return serviceFound;
+        
+        if (inGameObject.transform.childCount == 0) return null;
+        
+        return FindFirstLocalServiceInChildGameObjectsFromRoot(inGameObject, serviceTypeToFind, validScopes, ref distance);
+    }
+    
     private MonoBehaviour FindFirstLocalServiceInChildGameObjectsFromRoot(GameObject root, Type serviceTypeToFind, List<InjectionScope> validScopes, ref int distance)
     {
         MonoBehaviour serviceFoundInChildren = null;
@@ -250,38 +263,9 @@ public class DependencyInjector : MonoBehaviour
             
             closestDistance = localDistance;
             serviceFoundInChildren = tempFoundService;
-        }
-        
-        if(closestDistance != -1) distance = closestDistance;
-        return serviceFoundInChildren;
-    }
-    
-    private MonoBehaviour FindFirstLocalServiceInChildGameObjects(GameObject inGameObject, Type serviceTypeToFind, List<InjectionScope> validScopes, ref int distance)
-    {
-        distance ++;
-        
-        MonoBehaviour serviceFound = FindLocalServiceInGameObject(inGameObject, serviceTypeToFind, validScopes);
-
-        if(serviceFound != null) return serviceFound;
-        
-        if (inGameObject.transform.childCount == 0)
-        {
-            // Debug.LogWarning("Didn't find LocalService in children");
-            return null;
-        }
-
-        MonoBehaviour serviceFoundInChildren = null;
-        int closestDistance = -1;
-        foreach (Transform childTransform in inGameObject.transform)
-        {
-            int localDistance = distance;
             
-            MonoBehaviour tempFoundService = FindFirstLocalServiceInChildGameObjects(childTransform.gameObject, serviceTypeToFind, validScopes, ref localDistance);
-            
-            if(tempFoundService == null || (localDistance >= closestDistance && closestDistance != -1)) continue;
-            
-            closestDistance = localDistance;
-            serviceFoundInChildren = tempFoundService;
+            // Since distance can't be less than zero, we stop prematurely because we won't find an object 'closer'.
+            if(closestDistance == 0) return serviceFoundInChildren;
         }
         
         if(closestDistance != -1) distance = closestDistance;
@@ -297,20 +281,16 @@ public class DependencyInjector : MonoBehaviour
         
         foreach (GameObject rootGameObject in rootGameObjects)
         {
-            
-            MonoBehaviour tempFoundService = FindLocalServiceInGameObject(rootGameObject, serviceTypeToFind, validScopes);
-            
-            // If we find a service in a root object, we return because there is no closest distance in terms of hierarchy
-            if(tempFoundService != null) return tempFoundService; 
-            
-            int localDistance = closestDistance;
-            
-            tempFoundService = FindFirstLocalServiceInChildGameObjectsFromRoot(rootGameObject, serviceTypeToFind, validScopes, ref localDistance);
+            int localDistance = -1;
+            MonoBehaviour tempFoundService = FindFirstLocalServiceInChildGameObjects(rootGameObject, serviceTypeToFind, validScopes, ref localDistance);
             
             if(tempFoundService == null || (localDistance >= closestDistance && closestDistance != -1)) continue;
             
             closestDistance = localDistance;
             serviceFound = tempFoundService;
+            
+            // Since distance can't be less than zero, we stop prematurely because we won't find an object 'closer'.
+            if(closestDistance == 0) return serviceFound;
         }
         
         return serviceFound;
