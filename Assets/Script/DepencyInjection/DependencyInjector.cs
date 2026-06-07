@@ -89,13 +89,10 @@ public static class DependencyInjector
 
             if (nonUserAssembly) continue;
             
-            foreach (TypeInfo typeInfo in assembly.DefinedTypes)
-            {
-                if (typeInfo.HasAttribute<ServiceAttribute>())
-                {
-                    m_globalServiceTypes.Add(typeInfo.AsType());
-                }
-            }
+            m_globalServiceTypes = assembly.DefinedTypes
+                .Where(typeInfo => typeInfo.HasAttribute<ServiceAttribute>())
+                .Select(typeInfo => typeInfo.AsType())
+                .ToList();
         }
     }
     
@@ -146,7 +143,7 @@ public static class DependencyInjector
 
                 if (soServicesInstances.Count == 0)
                 {
-                    Debug.LogError("Type " + serviceType.Name + " of ScriptableObject is marked as 'Service', but no instance is present in the 'Assets' folder.");
+                    Debug.LogError($"ScriptableObject '{serviceType.Name}' is marked as 'Service', but no instance is present in the 'Assets' folder.");
                 }
                 else
                 {
@@ -154,12 +151,12 @@ public static class DependencyInjector
                 }
                 
                 if(soServicesInstances.Count > 1)
-                    Debug.LogWarning("Found more than one instance for ScriptableObject Service of type: " + serviceType.Name);
+                    Debug.LogWarning($"Found more than one instance of '{serviceType.Name}' ScriptableObject Service");
                 
                 continue;
             }
             
-            Debug.LogError("Type " + serviceType.Name + " is not supported for global service use. Don't use the 'Service' attribute for this type.");
+            Debug.LogError($"'{serviceType.Name}' is not supported for global service use. Don't use the 'Service' attribute for this type.");
         }
     }
     #endregion
@@ -168,10 +165,10 @@ public static class DependencyInjector
 
     private static void GlobalServiceToGlobalServiceInjection()
     {
-        foreach (var (serviceType, service) in m_globalServices)
+        foreach (var (receivingServiceType, receivingService) in m_globalServices)
         {
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-            foreach (FieldInfo fieldInfo in serviceType.GetFields(flags))
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+            foreach (FieldInfo fieldInfo in receivingServiceType.GetFields(flags))
             {
                 if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
                 
@@ -179,11 +176,28 @@ public static class DependencyInjector
                 
                 if(foundService == null)
                 {
-                    Debug.LogError("Global service to global service injection failed. Couldn't find service for " + fieldInfo.Name + " in " + serviceType.Name);
+                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve field: {receivingServiceType.Name}.{fieldInfo.Name}");
                     continue;
                 }
                 
-                fieldInfo.SetValue(service, foundService);
+                fieldInfo.SetValue(receivingService, foundService);
+            }
+            
+            foreach (MethodInfo methodInfo in receivingServiceType.GetMethods(flags))
+            {
+                if (!methodInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
+                
+                object[] parameters = methodInfo.GetParameters()
+                    .Select(p => ResolveGlobalService(p.ParameterType))
+                    .ToArray();
+                
+                if (parameters.Any(p => p == null))
+                {
+                    Debug.LogError($"Global service to global service injection failed. Couldn't resolve one or more parameter of method: {receivingServiceType.Name}.{methodInfo.Name}");
+                    continue;
+                }
+                
+                methodInfo.Invoke(receivingService, parameters);
             }
         }
     }
@@ -203,7 +217,7 @@ public static class DependencyInjector
                 
                 if(service == null)
                 {
-                    Debug.LogError("Couldn't find service for " + fieldInfo.Name + " in " + go.name);
+                    Debug.LogError($"Injection failed. Couldn't resolve field: {go.name}.{fieldInfo.Name}");
                     continue;
                 }
                 
@@ -277,20 +291,11 @@ public static class DependencyInjector
     private static MonoBehaviour FindLocalServiceInGameObject(GameObject go, Type serviceType,
         List<InjectionScope> validScopes)
     {
-        foreach (MonoBehaviour otherComponent in go.GetComponents<MonoBehaviour>())
-        {
-            if (otherComponent is LocalServiceProvider localServiceProvider && validScopes.Contains(localServiceProvider.InjectionScope))
-            {
-                MonoBehaviour serviceFound = localServiceProvider.ServiceComponents.Find((service) =>
-                {
-                    return service != null && service.GetType() == serviceType;
-                });
-
-                if (serviceFound != null) return serviceFound;
-            }
-        }
-        
-        return null;
+        return go.GetComponents<MonoBehaviour>()
+            .OfType<LocalServiceProvider>()
+            .Where(provider => validScopes.Contains(provider.InjectionScope))
+            .SelectMany(provider => provider.ServiceComponents)
+            .FirstOrDefault(service => service != null && service.GetType() == serviceType);
     }
 
     private static MonoBehaviour  FindLocalServiceInAncestors(GameObject go, Type serviceType,  List<InjectionScope> validScopes, ref int distance)
@@ -301,10 +306,7 @@ public static class DependencyInjector
         
         if(serviceFound != null) return serviceFound;
 
-        if (go.transform.parent == null)
-        {
-            return null;
-        }
+        if (go.transform.parent == null) return null;
         
         return FindLocalServiceInAncestors(go.transform.parent.gameObject, serviceType, validScopes, ref distance);
     }
