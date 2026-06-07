@@ -124,48 +124,44 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     }
 
     //Simple Update between each round
-    public void UpdateRound()
+    public void UpdateRound(bool isLoaded)
     {
-        if (m_currentCharacterPlayin == 0) // End of player turn
+        if (m_currentCharacterPlayin == 0) // Begin of player turn
         {
-
-            if (m_enemy.IsDead)
-            {
-                m_uiManager.SetWinLooseText(true);
-            }
-
-            UnlockUI(false);
-
-        }
-        else // End of enemy turn
-        {
+            
             if (m_player.IsDead)
             {
                 m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
-
+            }
+            UnlockUI(true);
+            if( !isLoaded) ChangeRound();
+        }
+        else // Begin of enemy turn
+        {
+            if (m_enemy.IsDead)
+            {
+                m_uiManager.SetWinLooseText(true);
                 return;
             }
-
-            ChangeRound();
-            UnlockUI(true);
-
+            UnlockUI(false);
         }
     }
 
     public void ChangeSides()
     {
-        UpdateRound();
         if (m_currentCharacterPlayin == 0)
         {
             // End of player turn
             m_currentCharacterPlayin = 1;
+            UpdateRound(false);
             m_enemy.InitializeCharacter();
         }
         else 
         {
             // End of enemy turn
             m_currentCharacterPlayin = 0;
+            UpdateRound(false);
             m_player.InitializeCharacter();
         }
     }
@@ -173,11 +169,11 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     public void ChangeRound()
     {
         MRoundCounter += 1;
-
+        
+        m_uiManager.UpdateRound(MRoundCounter);
+        
         var command = new CommandSave(MHistoric, GetSnapshot());
         command.Do();
-
-        m_uiManager.UpdateRound(MRoundCounter);
     }
 
     public void GoBackOneRound()
@@ -187,7 +183,8 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
 
         MLastSnapshotToUse.Apply();
 
-        UpdateRound();
+        UpdateRound(true);
+        m_uiManager.UpdateRound(MRoundCounter);
     }
 
 
