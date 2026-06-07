@@ -45,7 +45,7 @@ public static class DependencyInjector
         
         m_createdGlobalServices = false;
         m_globalServices.Clear();
-        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single); // We have to call it manually the first time
     }
     
     private static void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
@@ -60,15 +60,10 @@ public static class DependencyInjector
             m_createdGlobalServices = true;
         }
         
-        // Get all root objects
-        List<GameObject> roots = new List<GameObject>();
-        
-        roots.AddRange(scene.GetRootGameObjects());
-        
         // Do injection
-        foreach (GameObject root in roots)
+        foreach (GameObject root in scene.GetRootGameObjects())
         {
-            InjectDependenciesInGameObject(root, roots);
+            InjectDependenciesInGameObject(root, scene.GetRootGameObjects());
         }
     }
 
@@ -195,7 +190,7 @@ public static class DependencyInjector
         }
     }
     
-    private static void InjectDependenciesInGameObject(GameObject go, List<GameObject> roots)
+    private static void InjectDependenciesInGameObject(GameObject go, GameObject[] roots)
     {
         foreach (MonoBehaviour component in go.GetComponents<MonoBehaviour>())
         {
@@ -221,7 +216,7 @@ public static class DependencyInjector
         foreach (Transform childTransform in go.transform) InjectDependenciesInGameObject(childTransform.gameObject, roots);
     }
 
-    private static object ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
+    private static object ResolveService(GameObject inGameObject, Type serviceType, GameObject[]  rootGameObjects)
     {
         // I - Try global service injection first
         object globalService = ResolveGlobalService(serviceType);
@@ -330,7 +325,7 @@ public static class DependencyInjector
     }
     
     
-    private static MonoBehaviour ResolveSceneLocalServiceFromRoots(List<GameObject> roots, Type serviceType, List<InjectionScope> validScopes)
+    private static MonoBehaviour ResolveSceneLocalServiceFromRoots(GameObject[]  roots, Type serviceType, List<InjectionScope> validScopes)
     {
         MonoBehaviour closestService = null;
         int closestDistance = -1;
