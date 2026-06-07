@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        m_roundManager.UpdateRound();
+        m_roundManager.ChangeSides();
     }
 
     #endregion

@@ -1,10 +1,12 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 public class RoundManager : MonoBehaviour, ISnapshotProvider
 {
     // Instance of the Manager
     private static RoundManager s_instance;
+    private IActionCommand m_lastActionDone;
+
+    // Round Counter
 
     // Inject UIManager to lock and unlock UI
     [DependencyInjection] private UiManager m_uiManager;
@@ -12,21 +14,14 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     // Memento + Action
     public ISnapshot MLastSnapshotToUse { get; set; }
     public Historic MHistoric { get; set; }
-    private IActionCommand m_lastActionDone;
-    
-    // Round Counter
-    private int m_roundCounter = 0;
-    public int MRoundCounter
-    {
-        get => m_roundCounter;
-        set => m_roundCounter = value;
-    }
+
+    public int MRoundCounter { get; set; }
 
     #region Character
 
     // Characters Fields
-    [SerializeField]
-    private Character m_player;
+    [SerializeField] private Character m_player;
+
     [SerializeField] private Character m_enemy;
 
     public Character CurrentTarget { get; set; }
@@ -37,52 +32,63 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
 
     #region Main FCT
 
-    class RoundManagerSnapshot : ISnapshot
+    private class RoundManagerSnapshot : ISnapshot
     {
+        // Round Action
+        private readonly IActionCommand m_action;
+
+        private readonly int m_enemyHealth;
+
         // Master 
-        private RoundManager m_master;
+        private readonly RoundManager m_master;
 
         // Character Health
-        private int m_playerHealth;
-        private int m_enemyHealth;
+        private readonly int m_playerHealth;
+
+        // Round Count
+        private readonly int m_roundCount;
 
         // Who's player turn it is
-        private int m_turnCharacterPlaying;
-        
-        // Round Action
-        private IActionCommand m_action;
-        
+        private readonly int m_turnCharacterPlaying;
+
         public RoundManagerSnapshot(RoundManager master)
         {
             m_master = master;
-            
+
             m_playerHealth = master.m_player.CurrentHealth;
             m_enemyHealth = master.m_enemy.CurrentHealth;
 
             m_turnCharacterPlaying = master.m_currentCharacterPlayin;
 
             m_action = master.m_lastActionDone;
+
+            m_roundCount = master.MRoundCounter;
         }
-        
+
         public void Apply()
         {
             m_master.m_player.CurrentHealth = m_playerHealth;
             m_master.m_enemy.CurrentHealth = m_enemyHealth;
-            
-            m_master.m_currentCharacterPlayin = m_turnCharacterPlaying;
-            
+
+            m_master.m_currentCharacterPlayin = 0; // Need Player to be first
+
             m_master.m_lastActionDone = m_action;
+
+            m_master.MRoundCounter = m_roundCount;
         }
     }
-    
+
     // Get Snapshot at current time
     public ISnapshot GetSnapshot()
     {
         return new RoundManagerSnapshot(this);
     }
-    
+
     // Apply Snapshot at current Time
-    void ISnapshotProvider.ApplySnapshot(ISnapshot snapshot) => snapshot.Apply();
+    void ISnapshotProvider.ApplySnapshot(ISnapshot snapshot)
+    {
+        snapshot.Apply();
+    }
 
     private void Awake() //Only 1 copy
     {
@@ -90,8 +96,8 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
             Destroy(gameObject);
         else
             s_instance = this;
-        
-        MHistoric =  new Historic();
+
+        MHistoric = new Historic();
     }
 
     private void Start()
@@ -114,7 +120,7 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     private void EndOfActionDeclaration(IActionCommand action, bool castOnSelf)
     {
         DoAction(action, castOnSelf);
-        UpdateRound();
+        ChangeSides();
     }
 
     //Simple Update between each round
@@ -122,57 +128,68 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     {
         if (m_currentCharacterPlayin == 0) // End of player turn
         {
-            m_currentCharacterPlayin = 1;
 
             if (m_enemy.IsDead)
             {
-                
                 m_uiManager.SetWinLooseText(true);
-                UnlockUI(false);
-
-                return;
             }
 
             UnlockUI(false);
-            m_enemy.InitializeCharacter();
+
         }
         else // End of enemy turn
         {
-            m_currentCharacterPlayin = 0;
             if (m_player.IsDead)
             {
                 m_uiManager.SetWinLooseText(false);
                 UnlockUI(false);
-                
+
                 return;
             }
 
             ChangeRound();
             UnlockUI(true);
-            
+
+        }
+    }
+
+    public void ChangeSides()
+    {
+        UpdateRound();
+        if (m_currentCharacterPlayin == 0)
+        {
+            // End of player turn
+            m_currentCharacterPlayin = 1;
+            m_enemy.InitializeCharacter();
+        }
+        else 
+        {
+            // End of enemy turn
+            m_currentCharacterPlayin = 0;
             m_player.InitializeCharacter();
         }
     }
 
     public void ChangeRound()
     {
-        m_roundCounter += 1;
-        
-        CommandSave command = new CommandSave(MHistoric, GetSnapshot());
+        MRoundCounter += 1;
+
+        var command = new CommandSave(MHistoric, GetSnapshot());
         command.Do();
-        
-        m_uiManager.UpdateRound(m_roundCounter);
+
+        m_uiManager.UpdateRound(MRoundCounter);
     }
 
     public void GoBackOneRound()
     {
-        CommandLoad command = new CommandLoad(MHistoric, this);
+        var command = new CommandLoad(MHistoric, this);
         command.Do();
-        
+
         MLastSnapshotToUse.Apply();
-        
-        // TODO Setup Rounds
+
+        UpdateRound();
     }
+
 
     //DoAction depending on the player playing & if it's on himself
     public void DoAction(IActionCommand action, bool castOnSelf)
@@ -191,6 +208,4 @@ public class RoundManager : MonoBehaviour, ISnapshotProvider
     }
 
     #endregion
-
-
 }

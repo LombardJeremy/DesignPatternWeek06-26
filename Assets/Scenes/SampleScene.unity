@@ -25020,6 +25020,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1692226366}
   - component: {fileID: 1692226367}
+  - component: {fileID: 1692226368}
   m_Layer: 0
   m_Name: RoundManager
   m_TagString: Untagged
@@ -25056,6 +25057,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoundManager
   m_player: {fileID: 164211095928399046}
   m_enemy: {fileID: 6596571057736806945}
+--- !u!114 &1692226368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1692226365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18443ff84f4d37c4381a9ccdadb66838, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalServiceProvider
+  <ServiceComponents>k__BackingField:
+  - {fileID: 1692226367}
+  <InjectionScope>k__BackingField: 3
 --- !u!4 &1701554541 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5d68d1e38da0311479c8004fc150be37,

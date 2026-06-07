@@ -13,6 +13,7 @@ public class CommandLoad : Command
     
     public override void Do()
     {
+        if (m_historic.GetAllSnapshots().Count == 0) return;
         ISnapshot snapShotToLoad = m_historic.GetLastUsedSnapShotAndRemoveLast();
         m_roundManager.MLastSnapshotToUse = snapShotToLoad;
     }

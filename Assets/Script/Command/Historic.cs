@@ -25,7 +25,15 @@ public class Historic
     
     public ISnapshot GetLastUsedSnapShotAndRemoveLast()
     {
-        ISnapshot lastUsedSnapshot = snapshots[^2];
+        ISnapshot lastUsedSnapshot;
+        if (snapshots.Count < 2)
+        {
+            lastUsedSnapshot = snapshots[^1];
+        }
+        else
+        {
+            lastUsedSnapshot = snapshots[^2];
+        }
         ISnapshot lastSnapshot = snapshots[^1];
         snapshots.Remove(lastSnapshot);
         m_lastDeletedSnapshot = lastSnapshot;

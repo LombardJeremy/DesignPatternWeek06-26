@@ -48,6 +48,7 @@ public class UiManager : MonoBehaviour
     //Inject Player Class for Action after Input
     [DependencyInjection] private Player m_player; //Don't use in Awake
     [DependencyInjection] private Enemy m_enemy; //Don't use in Awake
+    [DependencyInjection] private RoundManager m_round; //Don't use in Awake
     
     #region Main Fct
 
@@ -114,7 +115,7 @@ public class UiManager : MonoBehaviour
     public void GoBackOneRound()
     {
         //TODO
-        
+        m_round.GoBackOneRound();
     }
 
     public void SetWinLooseText(bool IsWin)
