@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -23,7 +24,7 @@ public static class DependencyInjector
     };
     
     private static List<Type> m_globalServiceTypes = new List<Type>();
-    private static Dictionary<Type, MonoBehaviour> m_globalServices = new Dictionary<Type, MonoBehaviour>();
+    private static Dictionary<Type, object> m_globalServices = new Dictionary<Type, object>();
 
     private static bool m_initialized = false; 
     private static bool m_createdGlobalServices = false;
@@ -51,8 +52,8 @@ public static class DependencyInjector
     {
         if (!m_createdGlobalServices)
         {
-            // Create global services for the first time
-            CreateGlobalServicesNotInScene();
+            // Create/Get global services for the first time
+            CreateAndGetGlobalServices();
 
             GlobalServiceToGlobalServiceInjection();
 
@@ -76,7 +77,7 @@ public static class DependencyInjector
         
     }
 
-    #region Services Search And Creation
+    #region Global Services Creation
 
     private static void GetGlobalServiceTypes()
     {
@@ -98,24 +99,63 @@ public static class DependencyInjector
         }
     }
     
-    private static void CreateGlobalServicesNotInScene()
+    private static void CreateAndGetGlobalServices()
     {
+        string[] soGuids = AssetDatabase.FindAssets("t:ScriptableObject", new[] { "Assets" });
+        Dictionary<Type, List<ScriptableObject>> scriptableObjects = new Dictionary<Type, List<ScriptableObject>>();
+        foreach (string guid in soGuids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            ScriptableObject so = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+            
+            if(!scriptableObjects.ContainsKey(so.GetType()))
+                scriptableObjects[so.GetType()] = new List<ScriptableObject>();
+            
+            scriptableObjects[so.GetType()].Add(so);
+        }
+        
         foreach (Type serviceType in m_globalServiceTypes)
         {
+            ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
+            if(serviceAttribute == null) continue;
+            
             if (typeof(MonoBehaviour).IsAssignableFrom(serviceType))
             {
-                ServiceAttribute serviceAttribute = serviceType.GetCustomAttribute<ServiceAttribute>();
-                if(serviceAttribute == null) continue;
-
-                // For global service that should be instantiated by the injector
-                Type singleServiceType = serviceType;
-                GameObject go = new GameObject(singleServiceType.Name);
+                GameObject go = new GameObject(serviceType.Name);
         
                 Object.DontDestroyOnLoad(go);
             
-                MonoBehaviour createdService = go.AddComponent(singleServiceType) as MonoBehaviour;
+                MonoBehaviour createdService = go.AddComponent(serviceType) as MonoBehaviour;
         
-                m_globalServices.TryAdd(singleServiceType, createdService);
+                m_globalServices.TryAdd(serviceType, createdService);
+                continue;
+            }
+            
+            // Custom class global service
+            if(!typeof(Object).IsAssignableFrom(serviceType))
+            {
+                object createdService = Activator.CreateInstance(serviceType);
+                
+                m_globalServices.TryAdd(serviceType, createdService);
+                continue;
+            }
+
+            if (typeof(ScriptableObject).IsAssignableFrom(serviceType)
+                && scriptableObjects.TryGetValue(serviceType, out List<ScriptableObject> soServicesInstances))
+            {
+
+                if (soServicesInstances.Count == 0)
+                {
+                    Debug.LogError("Type " + serviceType.Name + " of ScriptableObject is marked as 'Service', but no instance is present in the 'Assets' folder.");
+                }
+                else
+                {
+                    m_globalServices.TryAdd(serviceType, soServicesInstances[0]);
+                }
+                
+                if(soServicesInstances.Count > 1)
+                    Debug.LogWarning("Found more than one instance for ScriptableObject Service of type: " + serviceType.Name);
+                
                 continue;
             }
             
@@ -135,7 +175,7 @@ public static class DependencyInjector
             {
                 if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
                 
-                MonoBehaviour foundService = ResolveGlobalService(fieldInfo.FieldType);
+                object foundService = ResolveGlobalService(fieldInfo.FieldType);
                 
                 if(foundService == null)
                 {
@@ -159,7 +199,7 @@ public static class DependencyInjector
             {
                 if (!fieldInfo.HasAttribute<DependencyInjectionAttribute>()) continue;
 
-                MonoBehaviour service = ResolveService(go, fieldInfo.FieldType, roots);
+                object service = ResolveService(go, fieldInfo.FieldType, roots);
                 
                 if(service == null)
                 {
@@ -174,10 +214,10 @@ public static class DependencyInjector
         foreach (Transform childTransform in go.transform) InjectDependenciesInGameObject(childTransform.gameObject, roots);
     }
 
-    private static MonoBehaviour ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
+    private static object ResolveService(GameObject inGameObject, Type serviceType, List<GameObject> rootGameObjects)
     {
         // I - Try global service injection first
-        MonoBehaviour globalService = ResolveGlobalService(serviceType);
+        object globalService = ResolveGlobalService(serviceType);
         if (globalService != null) return globalService;
                 
         // II - Then local service injection
@@ -189,9 +229,9 @@ public static class DependencyInjector
         return ResolveSceneLocalServiceFromRoots(rootGameObjects, serviceType, new List<InjectionScope> { InjectionScope.Scene });
     }
 
-    private static MonoBehaviour ResolveGlobalService(Type serviceType)
+    private static object ResolveGlobalService(Type serviceType)
     {
-        m_globalServices.TryGetValue(serviceType, out MonoBehaviour globalServiceFound);
+        m_globalServices.TryGetValue(serviceType, out object globalServiceFound);
 
         return globalServiceFound;
     }

@@ -6,10 +6,14 @@ using UnityEngine;
 public class BooService : MonoBehaviour
 {
     [DependencyInjection, ShowNonSerializedField] private FooService m_fooService;
+    [DependencyInjection, ShowNonSerializedField] private CustomService m_customService;
+    [DependencyInjection, ShowNonSerializedField] private SoService m_soService;
     
     private void Start()
     {
-        if(m_fooService) m_fooService.FooSayHello();    
+        m_fooService?.FooSayHello();
+        m_customService?.CustomSayHello();
+        m_soService?.SoSayHello();
     }
 
     public void BooSayHello()
