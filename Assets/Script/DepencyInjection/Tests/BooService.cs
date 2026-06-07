@@ -1,10 +1,11 @@
 using System;
+using NaughtyAttributes;
 using UnityEngine;
 
 [Service]
 public class BooService : MonoBehaviour
 {
-    [DependencyInjection] private FooService m_fooService;
+    [DependencyInjection, ShowNonSerializedField] private FooService m_fooService;
     
     private void Start()
     {
